@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CatalogService } from './catalog.service';
 import {
@@ -30,7 +30,7 @@ import { ScenarioList } from './scenario-list';
 type LoadState = 'loading' | 'ready' | 'missing' | 'error' | 'invalid';
 @Component({
   selector: 'app-scenario-browser',
-  imports: [ReactiveFormsModule, ScenarioDetail, ScenarioList, RouterLink],
+  imports: [ReactiveFormsModule, ScenarioDetail, ScenarioList],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './scenario-browser.html',
   styleUrl: './scenario-browser.css',

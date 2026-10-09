@@ -1,0 +1,21 @@
+<main class="petstore">
+  <h1>Orders.</h1>
+  <p>View submitted orders and open an order to see its details or delete it.</p>
+  <app-order-list />
+  <h2>Find an order by ID</h2>
+  <p>Enter the order ID from your order confirmation.</p>
+  <form class="panel form-stack" [formGroup]="form" (ngSubmit)="lookup(orderId.value)">
+    <label
+      >Order ID<input
+        #orderId
+        type="text"
+        inputmode="numeric"
+        formControlName="id"
+        required
+        aria-describedby="order-id-help"
+        [attr.aria-invalid]="id.touched && id.invalid"
+    /></label>
+    <p id="order-id-help">Use a positive whole number.</p>
+    <button class="primary" type="submit">Find order</button>
+  </form>
+</main>

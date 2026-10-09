@@ -1,0 +1,53 @@
+<main class="petstore narrow">
+  <a routerLink="/orders">← All orders</a>
+  @if (notice()) {
+    <p #noticeRegion tabindex="-1" role="status">{{ notice() }}</p>
+  }
+  @if (loading()) {
+    <p role="status">Loading order…</p>
+  } @else if (order(); as o) {
+    <h1>Order #{{ o.id }}</h1>
+    <article class="panel">
+      <dl>
+        <dt>Pet</dt>
+        <dd>
+          <a [routerLink]="['/pets', o.petId]">Pet #{{ o.petId }}</a>
+        </dd>
+        <dt>Quantity</dt>
+        <dd>{{ o.quantity }}</dd>
+        <dt>Status</dt>
+        <dd>{{ o.status }}</dd>
+        <dt>Complete</dt>
+        <dd>{{ o.complete ? 'Yes' : 'No' }}</dd>
+        <dt>Shipping date (local time)</dt>
+        <dd>{{ o.shipDate ? (o.shipDate | date: 'medium') : 'Not specified' }}</dd>
+      </dl>
+      <button
+        #deleteButton
+        class="danger"
+        type="button"
+        (click)="confirmDelete.set(true)"
+        [disabled]="deleting()"
+      >
+        Delete order
+      </button>
+    </article>
+  } @else {
+    <h1>Order details</h1>
+  }
+  @if (error()) {
+    <p role="alert">{{ error() }}</p>
+    @if (!order()) {
+      <button type="button" (click)="load()">Try again</button>
+    }
+  }
+  @if (confirmDelete()) {
+    <app-confirmation
+      title="Delete this order?"
+      message="This permanently deletes the order. The pet’s status will remain unchanged."
+      [busy]="deleting()"
+      (confirmed)="remove()"
+      (cancelled)="cancel()"
+    />
+  }
+</main>

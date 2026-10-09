@@ -1,0 +1,74 @@
+<main class="petstore narrow">
+  <a routerLink="/pets">← All pets</a>
+  @if (notice()) {
+    <p role="status">{{ notice() }}</p>
+  }
+  @if (loading()) {
+    <p role="status">Loading pet…</p>
+  } @else if (!pet()) {
+    <h1>Pet details</h1>
+    <p role="alert">{{ error() }}</p>
+    <button type="button" (click)="load()">Try again</button>
+  } @else if (pet(); as p) {
+    <h1>{{ p.name }}</h1>
+    <article class="panel">
+      <div class="photo-grid">
+        @for (url of p.photoUrls; track $index) {
+          <app-pet-photo [url]="url" [name]="p.name" />
+        } @empty {
+          <app-pet-photo [name]="p.name" />
+        }
+      </div>
+      <p>
+        <span class="badge">{{ p.status }}</span> · Pet #{{ p.id }}
+      </p>
+      <p>Category: {{ p.category?.name || 'No category' }}</p>
+      <p>
+        Tags:
+        @for (tag of p.tags; track $index) {
+          <span class="badge">{{ tag.name || 'Tag #' + tag.id }}</span>
+        } @empty {
+          None
+        }
+      </p>
+      <div class="actions">
+        <a class="button" [routerLink]="['/pets', p.id, 'edit']">Edit pet</a
+        ><button
+          #deleteButton
+          type="button"
+          class="danger"
+          (click)="confirmDelete.set(true)"
+          [disabled]="deleting()"
+        >
+          Delete pet</button
+        ><button
+          #orderButton
+          type="button"
+          class="primary"
+          [disabled]="p.status !== 'available' || ordering()"
+          (click)="ordering.set(true)"
+        >
+          Place order
+        </button>
+      </div>
+      @if (p.status !== 'available') {
+        <p>Ordering is available only for pets marked available.</p>
+      }
+    </article>
+    @if (error()) {
+      <p role="alert">{{ error() }}</p>
+    }
+    @if (confirmDelete()) {
+      <app-confirmation
+        title="Delete this pet?"
+        message="This permanently deletes the pet. Pets referenced by orders cannot be deleted."
+        [busy]="deleting()"
+        (confirmed)="remove()"
+        (cancelled)="cancelDelete()"
+      />
+    }
+    @if (ordering()) {
+      <app-order-form [pet]="p" (refreshed)="pet.set($event)" (closed)="closeOrder()" />
+    }
+  }
+</main>

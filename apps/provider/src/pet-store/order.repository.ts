@@ -46,6 +46,13 @@ export class OrderRepository {
     return Number(result.lastInsertRowid);
   }
 
+  findAll(): OrderDto[] {
+    const rows = this.database.db
+      .prepare('SELECT * FROM orders ORDER BY id DESC')
+      .all() as OrderRow[];
+    return rows.map(orderFromRow);
+  }
+
   findOne(id: number): OrderDto | undefined {
     const row = this.database.db
       .prepare('SELECT * FROM orders WHERE id = ?')

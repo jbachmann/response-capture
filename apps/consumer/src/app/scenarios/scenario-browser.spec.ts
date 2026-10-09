@@ -56,8 +56,8 @@ describe('scenario browser', () => {
     await click('app-scenario-detail button');
     expect((document.activeElement as HTMLElement).dataset['scenarioId']).toBe('z');
   });
-  it('redirects the starter route and displays arbitrary catalog content', async () => {
-    await harness.navigateByUrl('/');
+  it('displays arbitrary catalog content', async () => {
+    await harness.navigateByUrl('/scenarios');
     expect(text()).toContain('Loading scenarios');
     await load();
     expect(TestBed.inject(Router).url).toBe('/scenarios');

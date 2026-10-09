@@ -1,0 +1,64 @@
+<main class="petstore narrow">
+  <a routerLink="/pets">← All pets</a>
+  <h1>{{ original() ? 'Edit pet' : 'Add a pet' }}</h1>
+  @if (loading()) {
+    <p role="status">Loading pet…</p>
+  } @else if (loadError()) {
+    <div class="panel" role="alert">
+      <p>{{ loadError() }}</p>
+      <button type="button" (click)="load()">Try again</button>
+    </div>
+  } @else {
+    <form class="panel form-stack" [formGroup]="form" (ngSubmit)="save()">
+      <label
+        >Name<input
+          formControlName="name"
+          required
+          [attr.aria-invalid]="form.controls.name.touched && form.controls.name.invalid"
+          aria-describedby="name-help"
+      /></label>
+      <p id="name-help">Required. Enter a name with at least one non-space character.</p>
+      <label
+        >Status<select formControlName="status">
+          <option value="available">Available</option>
+          <option value="pending">Pending</option>
+          <option value="sold">Sold</option>
+        </select></label
+      >
+      <label>Category name (optional)<input formControlName="category" /></label>
+      <fieldset formArrayName="tags">
+        <legend>Tags (optional)</legend>
+        @for (tag of form.controls.tags.controls; track tag; let i = $index) {
+          <div class="tag-row" [formGroupName]="i">
+            <label>Tag {{ i + 1 }}<input formControlName="name" /></label
+            ><button
+              type="button"
+              (click)="form.controls.tags.removeAt(i)"
+              [disabled]="saving()"
+              [attr.aria-label]="'Remove tag ' + (i + 1)"
+            >
+              Remove
+            </button>
+          </div>
+        }
+        <button type="button" (click)="addTag()" [disabled]="saving()">Add tag</button>
+      </fieldset>
+      <label
+        >Photo URLs (optional)<textarea
+          formControlName="photos"
+          rows="4"
+          aria-describedby="photos-help"
+        ></textarea>
+      </label>
+      <p id="photos-help">One URL per line. HTTP and HTTPS photos can be displayed.</p>
+      @if (error()) {
+        <p role="alert">{{ error() }}</p>
+      }
+      <div class="actions">
+        <button type="submit" class="primary" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save pet' }}</button
+        ><a [routerLink]="original() ? ['/pets', original()!.id] : ['/pets']">Cancel</a>
+      </div>
+    </form>
+  }
+</main>

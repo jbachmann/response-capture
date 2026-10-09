@@ -4,6 +4,42 @@ describe('store behavior (e2e)', () => {
   const fixture = usePetstoreFixture();
   const { api, scenarios } = fixture;
 
+  it('lists all persisted orders newest first and excludes deleted orders', async () => {
+    await api().get('/store/order').expect(200).expect([]);
+    const savedPet = (await api().post('/pet').send(pet).expect(201)).body;
+    const first = (
+      await api().post('/store/order').send({ petId: savedPet.id }).expect(201)
+    ).body;
+    const second = (
+      await api()
+        .post('/store/order')
+        .send({
+          petId: savedPet.id,
+          quantity: 2,
+          shipDate: '2026-10-10T12:00:00Z',
+          status: 'delivered',
+          complete: true,
+        })
+        .expect(201)
+    ).body;
+    await api().get('/store/order').expect(200).expect([second, first]);
+    await fixture.reopen();
+    await api().get('/store/order').expect(200).expect([second, first]);
+    await api().delete(`/store/order/${second.id}`).expect(204);
+    await api().get('/store/order').expect(200).expect([first]);
+    await api().delete(`/store/order/${first.id}`).expect(204);
+    await api().get('/store/order').expect(200).expect([]);
+    const document = (await api().get('/docs-json').expect(200)).body;
+    expect(
+      document.paths['/store/order'].get.responses['200'].content[
+        'application/json'
+      ].schema,
+    ).toEqual({
+      type: 'array',
+      items: { $ref: '#/components/schemas/OrderDto' },
+    });
+  });
+
   it('creates and deletes orders, protects pets, and leaves pet status unchanged', async () => {
     const recorder = scenarios();
     await recorder.recordScenario(

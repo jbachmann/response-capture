@@ -1,1 +1,18 @@
-{ "/training/**": { "target": "http://localhost:3000", "secure": false } }
+{
+  "/training/**": {
+    "target": "http://localhost:3000",
+    "secure": false
+  },
+  "/pet/**": {
+    "target": "http://localhost:3000",
+    "secure": false
+  },
+  "/store/**": {
+    "target": "http://localhost:3000",
+    "secure": false
+  },
+  "^/pet(?:\\?|$)": {
+    "target": "http://localhost:3000",
+    "secure": false
+  }
+}

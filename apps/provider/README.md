@@ -62,6 +62,7 @@ application errors. Database operations are synchronous.
 | GET | `/pet/:petId` | Read a pet (200) |
 | DELETE | `/pet/:petId` | Delete an unreferenced pet (204) |
 | GET | `/store/inventory` | Count each pet status, including zero counts (200) |
+| GET | `/store/order` | List all orders, newest ID first (200; empty array when none) |
 | POST | `/store/order` | Create an order for an existing pet (201) |
 | GET | `/store/order/:orderId` | Read an order (200) |
 | DELETE | `/store/order/:orderId` | Delete an order (204) |

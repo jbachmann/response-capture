@@ -36,6 +36,13 @@ export class StoreController {
     return this.store.create(dto);
   }
 
+  @Get('order')
+  @ApiOperation({ summary: 'List all submitted orders, newest ID first' })
+  @ApiOkResponse({ type: [OrderDto] })
+  findAll() {
+    return this.store.findAll();
+  }
+
   @Get('order/:orderId')
   @ApiParam({
     name: 'orderId',

@@ -73,7 +73,7 @@ For more information on using the Angular CLI, including detailed command refere
 
 ## Scenario library
 
-The root route redirects to `/scenarios`. The browser fetches `/training/catalog`
+The scenario library remains available at `/scenarios`. The browser fetches `/training/catalog`
 on entry and when **Refresh catalog** is selected. It never substitutes a local
 sample file. Run both applications locally; Angular's development proxy forwards
 `/training/**` to `http://localhost:3000`.
@@ -96,3 +96,43 @@ The development proxy is not included in the production build.
 Component tests use arbitrary non-provider metadata and run axe WCAG A/AA checks
 against the test DOM. The DOM environment cannot evaluate browser layout or color
 contrast; check those in a real browser at desktop and mobile widths as well.
+
+## Petstore
+
+The root route redirects to `/pets`. Shared navigation links the petstore, order
+listing and lookup, and scenario library. Both applications must be running; the consumer
+uses the provider's real data, with no local mock fallback.
+
+- Browse pets and inventory, search names, and filter by status and exact tag.
+  Status changes apply immediately; use **Apply filters** or Enter to apply a tag.
+  Combined filters intersect the provider results; name search is local.
+- Add, edit, and delete pets. Name is required; photos, category, and tags are
+  optional. Add photo URLs one per line. Editing preserves existing category/tag
+  IDs and unchanged photo arrays; removing a tag or clearing a named category
+  deliberately removes it. Only HTTP/HTTPS photos are displayed, with a fallback
+  for missing or broken images.
+- Order available pets with a positive whole-number quantity and an optional
+  shipping date in local time. The consumer rechecks availability before ordering.
+  The API still permits ordering any status; this UI restriction is not a server
+  guarantee. Order operations never change pet status.
+- **Orders** lists all saved orders, newest first, with links to order and pet
+  details. Refresh the list to see updates from other users. ID lookup remains
+  available, and orders can be deleted after confirmation from their detail page.
+  The list comes from `GET /store/order` and includes training/demo orders.
+  Delete referencing orders before deleting a pet.
+- When inventory is empty, **Load demo data** offers a confirmed training reset.
+  It replaces all pets and orders, including records another user may have added
+  since the page loaded. Seeding is never automatic. Database clearing is not
+  exposed by the UI.
+
+The development proxy forwards `/pet`, `/pet/**`, `/store/**`, and `/training/**`
+to `http://localhost:3000`. In production, forward these API paths to the provider
+on the same origin and serve the Angular `index.html` for consumer paths including
+`/pets`, `/pets/new`, `/pets/:id`, `/pets/:id/edit`, `/orders`, `/orders/:id`, and
+`/scenarios`. Never apply the Angular fallback to API paths.
+
+Run `npm test --workspace=@response-capture/consumer` and
+`npm run build --workspace=@response-capture/consumer` from the repository root.
+Petstore tests cover HTTP contracts, filter cancellation/intersection, edit
+preservation, order eligibility, validation, confirmations, failures, and axe
+WCAG A/AA DOM checks. Browser checks are also needed for contrast and layout.

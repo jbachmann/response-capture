@@ -48,6 +48,10 @@ export class StoreService {
     }
   }
 
+  findAll(): OrderDto[] {
+    return this.orders.findAll();
+  }
+
   findOne(id: number): OrderDto {
     const order = this.orders.findOne(id);
     if (!order) {

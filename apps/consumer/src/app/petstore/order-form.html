@@ -1,0 +1,30 @@
+<section class="panel">
+  <h2>Place an order for {{ pet().name }}</h2>
+  <form class="form-stack" [formGroup]="form" (ngSubmit)="submit()">
+    <label
+      >Quantity<input
+        #quantity
+        type="number"
+        formControlName="quantity"
+        min="1"
+        max="9007199254740991"
+        step="1"
+        required
+        aria-describedby="quantity-help"
+        [attr.aria-invalid]="form.controls.quantity.touched && form.controls.quantity.invalid"
+    /></label>
+    <p id="quantity-help">Enter a positive whole number.</p>
+    <label
+      >Shipping date (optional)<input type="datetime-local" formControlName="shipDate"
+    /></label>
+    <p>Dates use your local time zone. Orders do not change pet availability.</p>
+    @if (error()) {
+      <p role="alert">{{ error() }}</p>
+    }
+    <div class="actions">
+      <button class="primary" type="submit" [disabled]="busy()">
+        {{ busy() ? 'Placing order…' : 'Place order' }}</button
+      ><button type="button" (click)="closed.emit()" [disabled]="busy()">Cancel</button>
+    </div>
+  </form>
+</section>

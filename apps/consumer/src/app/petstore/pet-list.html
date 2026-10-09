@@ -1,0 +1,102 @@
+<main class="petstore">
+  <div class="heading">
+    <div>
+      <p class="eyebrow">THE PETSTORE</p>
+      <h1>Find your next companion.</h1>
+      <p>Browse pets, manage their details, and place an order.</p>
+    </div>
+    <div class="actions">
+      <a class="primary button" routerLink="/pets/new">Add a pet</a
+      ><button type="button" (click)="refresh.next()" [disabled]="loading()">Refresh</button>
+    </div>
+  </div>
+  @if (inventory(); as counts) {
+    <section class="inventory" aria-label="Pet inventory">
+      <p>
+        <strong>{{ counts.available }}</strong> Available
+      </p>
+      <p>
+        <strong>{{ counts.pending }}</strong> Pending
+      </p>
+      <p>
+        <strong>{{ counts.sold }}</strong> Sold
+      </p>
+    </section>
+  }
+  <form class="panel filters" [formGroup]="filters" (ngSubmit)="refresh.next()">
+    <label>Search by name<input formControlName="name" type="search" /></label
+    ><label
+      >Status<select formControlName="status">
+        <option value="">All statuses</option>
+        <option value="available">Available</option>
+        <option value="pending">Pending</option>
+        <option value="sold">Sold</option>
+      </select></label
+    ><label>Exact tag<input formControlName="tag" placeholder="e.g. cute" /></label
+    ><button type="submit">Apply filters</button
+    ><button type="button" (click)="clear()">Clear filters</button>
+  </form>
+  @if (error()) {
+    <div class="panel" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" (click)="refresh.next()">Try again</button>
+    </div>
+  }
+  @if (notice()) {
+    <p #noticeRegion tabindex="-1" role="status">{{ notice() }}</p>
+  }
+  @if (loading()) {
+    <p role="status">Loading pets…</p>
+  } @else if (!error()) {
+    <p role="status">{{ visible().length }} pets</p>
+    @if (visible().length) {
+      <section class="pet-grid" aria-label="Pets">
+        @for (pet of visible(); track pet.id) {
+          <a
+            class="panel pet-card"
+            [routerLink]="['/pets', pet.id]"
+            [attr.aria-labelledby]="'pet-title-' + pet.id"
+          >
+            <app-pet-photo [url]="pet.photoUrls[0]" [name]="pet.name" />
+            <h2 [id]="'pet-title-' + pet.id">{{ pet.name }}</h2>
+            <span class="badge">{{ pet.status }}</span>
+            <p>{{ pet.category?.name || 'No category' }}</p>
+            <p class="tags">
+              @for (tag of pet.tags; track $index) {
+                <span>{{ tag.name || 'Tag #' + tag.id }}</span>
+              }
+            </p>
+            <span class="card-action" aria-hidden="true">View details →</span>
+          </a>
+        }
+      </section>
+    } @else {
+      <section class="panel">
+        <h2>{{ emptyDatabase() ? 'No pets yet' : 'No matching pets' }}</h2>
+        <p>
+          {{
+            emptyDatabase()
+              ? 'Add your first pet or load a small demo collection.'
+              : 'Try changing or clearing your filters.'
+          }}
+        </p>
+        @if (emptyDatabase()) {
+          <button #seedButton type="button" (click)="confirmSeed.set(true)" [disabled]="seeding()">
+            Load demo data
+          </button>
+        } @else {
+          <button type="button" (click)="clear()">Clear filters</button>
+        }
+      </section>
+    }
+  }
+  @if (confirmSeed()) {
+    <app-confirmation
+      title="Load demo data?"
+      message="This replaces all pets and orders in the database with demo records. Any data added by another user will also be replaced."
+      [busy]="seeding()"
+      (confirmed)="seed()"
+      (cancelled)="cancelSeed()"
+    />
+  }
+</main>

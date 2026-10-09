@@ -1,0 +1,57 @@
+<section aria-labelledby="submitted-orders-heading">
+  <div class="heading">
+    <h2 id="submitted-orders-heading">Submitted orders</h2>
+    <button type="button" (click)="refresh.next()" [disabled]="loading()">Refresh orders</button>
+  </div>
+  @if (loading()) {
+    <p role="status">Loading orders…</p>
+  } @else if (error()) {
+    <div class="panel" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" (click)="refresh.next()">Try again</button>
+    </div>
+  } @else if (orders().length === 0) {
+    <div class="panel">
+      <h3>No orders yet</h3>
+      <p>Choose an available pet to place your first order.</p>
+      <a routerLink="/pets">Browse pets</a>
+    </div>
+  } @else {
+    <p role="status">{{ orders().length }} submitted orders</p>
+    <div class="panel table-scroll" tabindex="0" role="region" aria-label="Submitted orders table">
+      <table>
+        <caption>
+          All orders, newest first
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Order</th>
+            <th scope="col">Pet</th>
+            <th scope="col">Quantity</th>
+            <th scope="col">Status</th>
+            <th scope="col">Complete</th>
+            <th scope="col">Shipping date (local time)</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of orders(); track order.id) {
+            <tr>
+              <td>
+                <a [routerLink]="['/orders', order.id]">Order #{{ order.id }}</a>
+              </td>
+              <td>
+                <a [routerLink]="['/pets', order.petId]">Pet #{{ order.petId }}</a>
+              </td>
+              <td>{{ order.quantity }}</td>
+              <td>
+                <span class="badge">{{ order.status }}</span>
+              </td>
+              <td>{{ order.complete ? 'Yes' : 'No' }}</td>
+              <td>{{ order.shipDate ? (order.shipDate | date: 'medium') : 'Not specified' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

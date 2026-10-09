@@ -35,8 +35,11 @@ afterAll(async () => {
 ```
 
 Create the recorder after the application is initialized. A recorder targets
-one server instance. The existing Petstore suite demonstrates recording in a
-single test because its application is recreated before every test.
+one server instance. The Petstore suite creates a recorder within each opted-in
+test because its application is recreated before every test. Persistence tests
+create their recorder after reopening the server when recording persisted reads.
+Each test flushes only after all its assertions have succeeded, so a later test
+assertion failure leaves that test's collected scenarios unwritten.
 
 The descriptor **builds the executed request**. Its body is snapshotted,
 validated, JSON-serialized and sent using supported Supertest `.type('json')`
@@ -126,11 +129,18 @@ ordering and repeatability. NestJS integration tests cover JSON values,
 204/404 responses, rejected expectations and later callback assertions,
 unsupported content types, fixture snapshots, duplicate and concurrent
 recording, flush lifecycle and byte-identical output. The existing Petstore
-suite demonstrates real 201/400/404 interactions, list arrays and 204 deletion.
+suite records 55 scenarios across 14 test cases: pet CRUD, order defaults and
+CRUD, inventory, relationship conflicts, persistence, repeatable training seed
+and reset operations, and malformed or maximum safe IDs. It includes
+201/400/404/409 interactions, list arrays and 204 deletion. Query-dependent
+filter tests and non-JSON root/Swagger UI responses remain outside recording
+because version 1 does not model these interactions.
 
 Implementation verification: `npm test` passed 45 tests; `npm run test:e2e`
 passed 68 tests. TypeScript checking, the production build, lint and
-`git diff --check` passed. `npm run scenarios:merge` produced a catalog of five
-Petstore examples and reported their shared `POST /pet` path informationally.
+`git diff --check` passed. `npm run scenarios:merge` produced a catalog of 55
+unique Petstore scenarios and reported shared method/path combinations
+informationally. The expanded e2e suite also passed TypeScript checking, lint
+and `git diff --check`.
 Integration tests require permission to open localhost sockets in restricted
 execution environments.

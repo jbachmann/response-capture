@@ -159,8 +159,9 @@ XML, pagination, payments, or deployment changes.
 
 Integration tests can explicitly record asserted JSON interactions using the
 [test-only API scenario recorder](test/support/api-scenario-recorder/README.md).
-The Petstore end-to-end suite includes runnable examples for success,
-validation errors, missing resources, lists and empty responses.
+The Petstore end-to-end suite records 55 named scenarios covering pet and order
+CRUD, inventory, conflicts, persistence, training resets, invalid IDs, and empty
+responses. Recorders flush after each opted-in test completes its assertions.
 
 ```sh
 rm -rf artifacts/api-scenarios

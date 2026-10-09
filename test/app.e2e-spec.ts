@@ -17,6 +17,12 @@ describe('SQLite Petstore (e2e)', () => {
   let previousPath: string | undefined;
   const pet = { name: 'Milo', photoUrls: ['https://example.com/milo.jpg'] };
   const api = () => request(app.getHttpServer());
+  const scenarios = () =>
+    createScenarioRecorder({
+      app: app.getHttpServer(),
+      suiteId: 'petstore-e2e',
+      outputDirectory: 'artifacts/api-scenarios',
+    });
   async function open() {
     const fixture = await Test.createTestingModule({
       imports: [AppModule],
@@ -86,42 +92,81 @@ describe('SQLite Petstore (e2e)', () => {
   });
 
   it('preserves root and starts empty', async () => {
+    const recorder = scenarios();
     await api().get('/').expect(200).expect('Hello World!');
-    await api().get('/pet').expect(200).expect([]);
-    await api()
-      .get('/store/inventory')
-      .expect(200)
-      .expect({ available: 0, pending: 0, sold: 0 });
+    await recorder.recordScenario(
+      'pet.list.empty',
+      { method: 'GET', path: '/pet' },
+      (test) => test.expect(200).expect([]),
+    );
+    await recorder.recordScenario(
+      'store.inventory.empty',
+      { method: 'GET', path: '/store/inventory' },
+      (test) => test.expect(200).expect({ available: 0, pending: 0, sold: 0 }),
+    );
+    await recorder.flush();
   });
   it('creates, lists, reads, replaces, and deletes pets', async () => {
+    const recorder = scenarios();
+    const body = {
+      ...pet,
+      category: { id: 1, name: 'Cat' },
+      tags: [{ id: 2, name: 'cute' }],
+      status: 'sold',
+    };
     const created = (
-      await api()
-        .post('/pet')
-        .send({
-          ...pet,
-          category: { id: 1, name: 'Cat' },
-          tags: [{ id: 2, name: 'cute' }],
-          status: 'sold',
-        })
-        .expect(201)
+      await recorder.recordScenario(
+        'pet.create.with-category-and-tags',
+        { method: 'POST', path: '/pet', body },
+        async (test) => {
+          const response = await test.expect(201);
+          expect(response.body).toMatchObject({
+            ...pet,
+            id: 1,
+            status: 'sold',
+          });
+          return response;
+        },
+      )
     ).body;
-    expect(created).toMatchObject({ ...pet, id: 1, status: 'sold' });
-    await api().get('/pet/1').expect(200).expect(created);
+    await recorder.recordScenario(
+      'pet.read.success',
+      { method: 'GET', path: '/pet/1' },
+      (test) => test.expect(200).expect(created),
+    );
     await api().get('/pet').expect(200).expect([created]);
     const replaced = { id: 1, name: 'New name', photoUrls: [] };
-    await api()
-      .put('/pet')
-      .send(replaced)
-      .expect(200)
-      .expect({ ...replaced, tags: [], status: 'available' });
-    const deleted = await api().delete('/pet/1').expect(204);
-    expect(deleted.text).toBe('');
-    await api().get('/pet/1').expect(404);
-    await api().delete('/pet/1').expect(404);
-    await api()
-      .put('/pet')
-      .send({ ...pet, id: 1 })
-      .expect(404);
+    await recorder.recordScenario(
+      'pet.replace.resets-defaults',
+      { method: 'PUT', path: '/pet', body: replaced },
+      (test) =>
+        test.expect(200).expect({ ...replaced, tags: [], status: 'available' }),
+    );
+    await recorder.recordScenario(
+      'pet.delete.after-replacement',
+      { method: 'DELETE', path: '/pet/1' },
+      async (test) => {
+        const response = await test.expect(204);
+        expect(response.text).toBe('');
+        return response;
+      },
+    );
+    await recorder.recordScenario(
+      'pet.read.after-deletion',
+      { method: 'GET', path: '/pet/1' },
+      (test) => test.expect(404),
+    );
+    await recorder.recordScenario(
+      'pet.delete.missing',
+      { method: 'DELETE', path: '/pet/1' },
+      (test) => test.expect(404),
+    );
+    await recorder.recordScenario(
+      'pet.replace.missing',
+      { method: 'PUT', path: '/pet', body: { ...pet, id: 1 } },
+      (test) => test.expect(404),
+    );
+    await recorder.flush();
   });
   it('filters by any status or tag with repeated and comma-separated values in ID order', async () => {
     await api()
@@ -174,39 +219,79 @@ describe('SQLite Petstore (e2e)', () => {
       .expect({ available: 1, pending: 1, sold: 1 });
   });
   it('creates and deletes orders, protects pets, and leaves pet status unchanged', async () => {
-    await api().post('/store/order').send({ petId: 99 }).expect(404);
+    const recorder = scenarios();
+    await recorder.recordScenario(
+      'store.order.create.missing-pet',
+      { method: 'POST', path: '/store/order', body: { petId: 99 } },
+      (test) => test.expect(404),
+    );
     await api().post('/pet').send(pet).expect(201);
     const order = (
-      await api().post('/store/order').send({ petId: 1 }).expect(201)
+      await recorder.recordScenario(
+        'store.order.create.defaults',
+        { method: 'POST', path: '/store/order', body: { petId: 1 } },
+        async (test) => {
+          const response = await test.expect(201);
+          expect(response.body).toEqual({
+            id: 1,
+            petId: 1,
+            quantity: 1,
+            status: 'placed',
+            complete: false,
+          });
+          return response;
+        },
+      )
     ).body;
-    expect(order).toEqual({
-      id: 1,
-      petId: 1,
-      quantity: 1,
-      status: 'placed',
-      complete: false,
-    });
-    await api().get('/store/order/1').expect(200).expect(order);
-    await api().delete('/pet/1').expect(409);
+    await recorder.recordScenario(
+      'store.order.read.success',
+      { method: 'GET', path: '/store/order/1' },
+      (test) => test.expect(200).expect(order),
+    );
+    await recorder.recordScenario(
+      'pet.delete.referenced-by-order',
+      { method: 'DELETE', path: '/pet/1' },
+      (test) => test.expect(409),
+    );
     await api()
       .get('/pet/1')
       .expect(200)
       .then((r) => expect(r.body.status).toBe('available'));
-    await api()
-      .get('/store/inventory')
-      .expect(200)
-      .expect({ available: 1, pending: 0, sold: 0 });
-    await api()
-      .delete('/store/order/1')
-      .expect(204)
-      .then((r) => expect(r.text).toBe(''));
-    await api().get('/store/order/1').expect(404);
-    await api().delete('/store/order/1').expect(404);
-    await api()
-      .get('/pet/1')
-      .expect(200)
-      .then((r) => expect(r.body.status).toBe('available'));
+    await recorder.recordScenario(
+      'store.inventory.with-order',
+      { method: 'GET', path: '/store/inventory' },
+      (test) => test.expect(200).expect({ available: 1, pending: 0, sold: 0 }),
+    );
+    await recorder.recordScenario(
+      'store.order.delete.success',
+      { method: 'DELETE', path: '/store/order/1' },
+      async (test) => {
+        const response = await test.expect(204);
+        expect(response.text).toBe('');
+        return response;
+      },
+    );
+    await recorder.recordScenario(
+      'store.order.read.missing',
+      { method: 'GET', path: '/store/order/1' },
+      (test) => test.expect(404),
+    );
+    await recorder.recordScenario(
+      'store.order.delete.missing',
+      { method: 'DELETE', path: '/store/order/1' },
+      (test) => test.expect(404),
+    );
+    await recorder.recordScenario(
+      'pet.read.after-order-deletion',
+      { method: 'GET', path: '/pet/1' },
+      async (test) => {
+        const response = await test.expect(200);
+        expect(response.body.status).toBe('available');
+        return response;
+      },
+    );
     await api().delete('/pet/1').expect(204);
+    await recorder.flush();
   });
   it('persists nested pet and order records after shutdown and reopening', async () => {
     const savedPet = (
@@ -234,16 +319,24 @@ describe('SQLite Petstore (e2e)', () => {
     ).body;
     await app.close();
     await open();
-    await api().get(`/pet/${savedPet.id}`).expect(200).expect(savedPet);
-    await api()
-      .get(`/store/order/${savedOrder.id}`)
-      .expect(200)
-      .expect(savedOrder);
+    const recorder = scenarios();
+    await recorder.recordScenario(
+      'pet.read.persisted',
+      { method: 'GET', path: `/pet/${savedPet.id}` },
+      (test) => test.expect(200).expect(savedPet),
+    );
+    await recorder.recordScenario(
+      'store.order.read.persisted',
+      { method: 'GET', path: `/store/order/${savedOrder.id}` },
+      (test) => test.expect(200).expect(savedOrder),
+    );
     await api().delete(`/pet/${savedPet.id}`).expect(409);
     const next = (await api().post('/pet').send(pet).expect(201)).body;
     expect(next.id).toBeGreaterThan(savedPet.id);
+    await recorder.flush();
   });
   it('replaces existing data with repeatable static training data', async () => {
+    const recorder = scenarios();
     const existing = (await api().post('/pet').send(pet).expect(201)).body;
     await api().post('/store/order').send({ petId: existing.id }).expect(201);
     const summary = {
@@ -251,7 +344,11 @@ describe('SQLite Petstore (e2e)', () => {
       orders: 3,
       inventory: { available: 2, pending: 2, sold: 2 },
     };
-    await api().post('/training/seed').expect(200).expect(summary);
+    await recorder.recordScenario(
+      'training.seed.replaces-existing',
+      { method: 'POST', path: '/training/seed' },
+      (test) => test.expect(200).expect(summary),
+    );
     const pets = (await api().get('/pet').expect(200)).body;
     expect(pets.map((p: { name: string }) => p.name)).toEqual([
       'Milo',
@@ -283,7 +380,11 @@ describe('SQLite Petstore (e2e)', () => {
       .expect(200);
     await api().post('/pet').send(pet).expect(201);
     await api().post('/store/order').send({ petId: 7 }).expect(201);
-    await api().post('/training/seed').expect(200).expect(summary);
+    await recorder.recordScenario(
+      'training.seed.repeatable',
+      { method: 'POST', path: '/training/seed' },
+      (test) => test.expect(200).expect(summary),
+    );
     await api().get('/pet').expect(200).expect(pets);
     for (const order of orders)
       await api().get(`/store/order/${order.id}`).expect(200).expect(order);
@@ -293,14 +394,25 @@ describe('SQLite Petstore (e2e)', () => {
     await open();
     await api().get('/pet').expect(200).expect(pets);
     await api().get('/store/order/3').expect(200).expect(orders[2]);
+    await recorder.flush();
   });
   it('clears orders before pets, remains reusable, and persists the empty database', async () => {
+    const recorder = scenarios();
     await api().post('/training/seed').expect(200);
-    await api()
-      .delete('/training/database')
-      .expect(204)
-      .then((r) => expect(r.text).toBe(''));
-    await api().delete('/training/database').expect(204);
+    await recorder.recordScenario(
+      'training.database.clear',
+      { method: 'DELETE', path: '/training/database' },
+      async (test) => {
+        const response = await test.expect(204);
+        expect(response.text).toBe('');
+        return response;
+      },
+    );
+    await recorder.recordScenario(
+      'training.database.clear-already-empty',
+      { method: 'DELETE', path: '/training/database' },
+      (test) => test.expect(204),
+    );
     await app.close();
     await open();
     await api().get('/pet').expect(200).expect([]);
@@ -317,6 +429,7 @@ describe('SQLite Petstore (e2e)', () => {
     ).body;
     expect(order.id).toBe(1);
     await api().delete('/pet/1').expect(409);
+    await recorder.flush();
   });
   it('rolls back a failed seed without losing original records or ID sequences', async () => {
     const existing = (await api().post('/pet').send(pet).expect(201)).body;
@@ -336,15 +449,38 @@ describe('SQLite Petstore (e2e)', () => {
   it.each(['0', '-1', '1.5', 'abc', '1e2', '9007199254740992'])(
     'rejects malformed ID %s',
     async (id) => {
-      for (const route of [`/pet/${id}`, `/store/order/${id}`]) {
-        await api().get(route).expect(400);
-        await api().delete(route).expect(400);
+      const recorder = scenarios();
+      for (const [resource, path] of [
+        ['pet', `/pet/${id}`],
+        ['store.order', `/store/order/${id}`],
+      ]) {
+        await recorder.recordScenario(
+          `${resource}.read.invalid-id.${id}`,
+          { method: 'GET', path },
+          (test) => test.expect(400),
+        );
+        await recorder.recordScenario(
+          `${resource}.delete.invalid-id.${id}`,
+          { method: 'DELETE', path },
+          (test) => test.expect(400),
+        );
       }
+      await recorder.flush();
     },
   );
   it('accepts the maximum safe ID and reports missing records', async () => {
-    await api().get('/pet/9007199254740991').expect(404);
-    await api().get('/store/order/9007199254740991').expect(404);
+    const recorder = scenarios();
+    await recorder.recordScenario(
+      'pet.read.maximum-safe-id',
+      { method: 'GET', path: '/pet/9007199254740991' },
+      (test) => test.expect(404),
+    );
+    await recorder.recordScenario(
+      'store.order.read.maximum-safe-id',
+      { method: 'GET', path: '/store/order/9007199254740991' },
+      (test) => test.expect(404),
+    );
+    await recorder.flush();
   });
   it.each([
     {},

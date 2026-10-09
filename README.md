@@ -57,7 +57,8 @@ npm run scenarios:merge
 Builds produce `apps/provider/dist`, `apps/catalog/dist`, `apps/consumer/dist/consumer`,
 and `apps/catalog-ui/dist/catalog-ui`.
 Start the built API with `npm run start:prod --workspace=@response-capture/provider`.
-Serve the UI's `dist/consumer/browser` directory using your chosen static host.
+Serve `apps/consumer/dist/consumer/browser` and
+`apps/catalog-ui/dist/catalog-ui/browser` using your chosen static hosts.
 Deployment commands remain application-local.
 
 Build and unit-test tasks use local Turbo caching in `.turbo/`. Development,
@@ -76,13 +77,13 @@ command but retain the generated local file.
 The catalog API stores submissions in `apps/catalog/data/catalog.sqlite` by
 default; `CATALOG_DATABASE_PATH` overrides it independently of the provider's
 `DATABASE_PATH`. See the [catalog API documentation](apps/catalog/README.md) for
-lookup routes and persistence configuration. The consumer Scenario library loads
+lookup routes and persistence configuration. The catalog-ui Scenario library at `/` loads
 catalog inventory from that API and lets you select a system and Latest or a
 recorded commit. Its default system is the first alphabetically.
 
-For production, forward `/catalog-inventory` and `/catalogs/**` on the consumer's
+For production, forward `/catalog-inventory` and `/catalogs/**` on catalog-ui's
 origin to the catalog API. Forward petstore, order, and training routes to the
-provider. Serve the Angular application for `/scenarios` and other UI routes;
+provider on the consumer origin. Serve each Angular application for its UI routes;
 never apply the Angular fallback to API paths. The provider no longer serves
 `/training/catalog`.
 
@@ -97,7 +98,7 @@ For machines with limited resources, use `NG_BUILD_MAX_WORKERS=2 npm run build`
 - [apps/provider](apps/provider/README.md): API, SQLite persistence, and scenario recorder.
 - [apps/consumer](apps/consumer/README.md): Angular UI and its local development instructions.
 - [apps/catalog](apps/catalog/README.md): NestJS catalog API.
-- `apps/catalog-ui`: Angular catalog UI.
+- [apps/catalog-ui](apps/catalog-ui/README.md): Angular Scenario library.
 - `packages/*`: reserved workspace pattern for future shared libraries; no shared package exists yet.
 
 Future shared contracts should expose browser-safe types rather than decorated

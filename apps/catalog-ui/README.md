@@ -1,59 +1,68 @@
-# CatalogUi
+# Catalog UI
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.26.
+The Angular Scenario library browses catalogs submitted to the catalog API.
+Install dependencies from the repository root with Node.js 24 and npm 11.8.0:
 
-## Development server
-
-To start a local development server, run:
-
-```bash
-ng serve
+```sh
+nvm use
+npm ci
+npm run dev --workspace=catalog
+npm run dev --workspace=catalog-ui
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Open http://localhost:4201/. The library lives at `/`; unknown UI paths redirect
+there. The consumer at http://localhost:4200/ provides the Petstore UI separately.
+See the [workspace README](../../README.md) for combined development commands.
 
-## Code scaffolding
+## Scenario library
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+The scenario library is available at `/`. It fetches
+`/catalog-inventory` on entry and refresh, then loads the selected system from
+`/catalogs/:systemName` (Latest) or `/catalogs/:systemName/:selector` (a commit).
+The default is the first system alphabetically and Latest. The System and Version
+selectors let you browse all submitted systems and commits, with aliases and
+submission dates shown beside each commit. It never substitutes a local sample.
 
-```bash
-ng generate component component-name
+Run catalog-ui and the catalog API locally. Angular's development proxy forwards
+`/catalog-inventory` and `/catalogs/**` to `http://localhost:3001`. Start the catalog
+API before generating and merging provider recordings; merging submits the catalog
+automatically. See the [catalog API documentation](../catalog/README.md).
+
+Categories, task groups, tags, and response-status choices come entirely from the
+loaded catalog. Optional `title`, `category`, `group`, `tags`, and `description`
+fields provide readable browsing metadata. Legacy entries use their stable ID as
+the title and appear under **Uncategorized** when category is absent. Missing
+metadata does not create filter choices. Request and response JSON remain exact
+recorded examples, including `null` bodies.
+
+System and version are stored in URL parameters `system` and `commit`; omitting
+`commit` selects Latest. Changing either selector clears scenario filters and
+details. Browser back/forward restores catalog selection and scenario state.
+Refresh preserves valid selections and falls back to the first system or Latest
+if a selected system or commit disappears.
+
+Search, filters, and selected scenario are stored in URL query parameters (`q`,
+`category`, `group`, `tag`, `status`, `scenario`). Removed values are cleared when
+the catalog reloads. Browsing does not execute any scenario requests.
+
+For production, configure your static host to serve the Angular application for
+`/` and forward `/catalog-inventory` and `/catalogs/**` to the catalog
+API on the same origin.
+The development proxy is not included in the production build.
+
+Component tests use arbitrary non-provider metadata and run axe WCAG A/AA checks
+against the test DOM. The DOM environment cannot evaluate browser layout or color
+contrast; check those in a real browser at desktop and mobile widths as well.
+
+## Verification and builds
+
+Run from the repository root:
+
+```sh
+npm test --workspace=catalog-ui
+npm run build --workspace=catalog-ui
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Serve `apps/catalog-ui/dist/catalog-ui/browser` with your static host. Configure
+UI path fallback and API forwarding as described above. No UI end-to-end runner
+is configured in this repository.

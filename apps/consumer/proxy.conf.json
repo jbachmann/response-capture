@@ -1,12 +1,4 @@
 {
-  "/catalog-inventory": {
-    "target": "http://localhost:3001",
-    "secure": false
-  },
-  "/catalogs/**": {
-    "target": "http://localhost:3001",
-    "secure": false
-  },
   "/training/**": {
     "target": "http://localhost:3000",
     "secure": false

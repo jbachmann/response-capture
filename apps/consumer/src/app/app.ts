@@ -17,10 +17,7 @@ import { filter } from 'rxjs';
       <a routerLink="/pets" class="app-brand">Petstore<span>Response Capture</span></a>
       <nav aria-label="Main navigation">
         <a routerLink="/pets" routerLinkActive="active" ariaCurrentWhenActive="page">Pets</a
-        ><a routerLink="/orders" routerLinkActive="active" ariaCurrentWhenActive="page">Orders</a
-        ><a routerLink="/scenarios" routerLinkActive="active" ariaCurrentWhenActive="page"
-          >Scenario library</a
-        >
+        ><a routerLink="/orders" routerLinkActive="active" ariaCurrentWhenActive="page">Orders</a>
       </nav>
     </header>
     <div id="page-content" tabindex="-1"><router-outlet /></div>`,

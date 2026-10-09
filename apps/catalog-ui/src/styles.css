@@ -1,3 +1,79 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import 'tailwindcss';
+:root {
+  --ink: #24382f;
+  --muted: #57685e;
+  --accent: #216349;
+  --border: #dce2db;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: var(--ink);
+  background: #fafbf8;
+}
+body {
+  margin: 0;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+a {
+  color: inherit;
+}
+:focus-visible {
+  outline: 3px solid #287654;
+  outline-offset: 3px;
+}
+.eyebrow {
+  font-size: 0.65rem;
+  font-weight: 650;
+  letter-spacing: 0.13em;
+  color: var(--muted);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem max(1.5rem, calc((100vw - 1320px) / 2));
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.app-brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.app-brand span {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -100px;
+  z-index: 10;
+  background: #fff;
+  padding: 1rem;
+}
+.skip-link:focus {
+  top: 1rem;
+}
+@media (max-width: 600px) {
+  .app-header {
+    align-items: start;
+    flex-direction: column;
+  }
+}

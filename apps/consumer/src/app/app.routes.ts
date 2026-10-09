@@ -31,10 +31,5 @@ export const routes: Routes = [
     title: 'Order details · Petstore',
     loadComponent: () => import('./petstore/order-detail').then((m) => m.OrderDetail),
   },
-  {
-    path: 'scenarios',
-    title: 'Scenario library',
-    loadComponent: () => import('./scenarios/scenario-browser').then((m) => m.ScenarioBrowser),
-  },
   { path: '**', redirectTo: 'pets' },
 ];

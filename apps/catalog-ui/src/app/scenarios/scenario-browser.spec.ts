@@ -4,12 +4,19 @@ import { provideLocationMocks } from '@angular/common/testing';
 import referenceCatalog from '../../../../provider/docs/catalog.json';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../app.routes';
 import { example, synthetic } from './catalog.fixtures';
 import { parseCatalog, Scenario } from './catalog';
+
+@Component({
+  template: '<p>Test destination</p>',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class TestDestination {}
 
 // No provider-domain metadata appears in these fixtures.
 describe('scenario browser', () => {
@@ -45,7 +52,7 @@ describe('scenario browser', () => {
   beforeEach(async () => {
     TestBed.configureTestingModule({
       providers: [
-        provideRouter(routes),
+        provideRouter([{ path: 'test-destination', component: TestDestination }, ...routes]),
         provideLocationMocks(),
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -56,14 +63,14 @@ describe('scenario browser', () => {
   });
   afterEach(() => http.verify());
   it('browses all 55 annotated reference scenarios', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider');
+    await harness.navigateByUrl('/?system=provider');
     await load(parseCatalog(referenceCatalog).scenarios);
     expect(root().querySelectorAll('[data-scenario-id]')).toHaveLength(55);
     expect(text()).toContain('Reject reading a pet with ID -1');
     expect(text()).toContain('Reject reading a pet with ID 1.5');
   });
   it('passes axe WCAG A/AA DOM checks for the list and selected details', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider');
+    await harness.navigateByUrl('/?system=provider');
     await load();
     const audit = () =>
       axe.run(root(), {
@@ -79,10 +86,10 @@ describe('scenario browser', () => {
     expect((document.activeElement as HTMLElement).dataset['scenarioId']).toBe('z');
   });
   it('displays arbitrary catalog content', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider');
+    await harness.navigateByUrl('/?system=provider');
     expect(text()).toContain('Loading scenarios');
     await load();
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=provider');
+    expect(TestBed.inject(Router).url).toBe('/?system=provider');
     expect(text()).toContain('Astronomy');
     expect(text()).toContain('Weather');
     expect(text()).toContain('Uncategorized');
@@ -90,7 +97,7 @@ describe('scenario browser', () => {
   });
   it('restores query filters and details, and preserves nested JSON and explicit null', async () => {
     await harness.navigateByUrl(
-      '/scenarios?system=provider&category=Astronomy&group=Open%20a%20station&tag=night&status=201&scenario=z',
+      '/?system=provider&category=Astronomy&group=Open%20a%20station&tag=night&status=201&scenario=z',
     );
     await load();
     expect(root().querySelectorAll('[data-scenario-id]')).toHaveLength(1);
@@ -101,7 +108,7 @@ describe('scenario browser', () => {
     );
   });
   it('updates URL search, combines filters, clears them, and handles no matches', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider');
+    await harness.navigateByUrl('/?system=provider');
     await load();
     const search = root().querySelector('input')!;
     search.value = 'observatories sky';
@@ -117,34 +124,32 @@ describe('scenario browser', () => {
     expect(text()).toContain('No matching scenarios');
     await click('.results-bar button');
     expect(root().querySelectorAll('[data-scenario-id]')).toHaveLength(4);
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=provider');
+    expect(TestBed.inject(Router).url).toBe('/?system=provider');
   });
   it('clears incompatible groups when category changes', async () => {
-    await harness.navigateByUrl(
-      '/scenarios?system=provider&category=Astronomy&group=Open%20a%20station',
-    );
+    await harness.navigateByUrl('/?system=provider&category=Astronomy&group=Open%20a%20station');
     await load();
     const category = root().querySelector<HTMLSelectElement>('.filters select')!;
     category.value = 'Weather';
     category.dispatchEvent(new Event('change'));
     await harness.fixture.whenStable();
     harness.detectChanges();
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=provider&category=Weather');
+    expect(TestBed.inject(Router).url).toBe('/?system=provider&category=Weather');
     expect(root().querySelectorAll('[data-scenario-id]')).toHaveLength(1);
   });
   it('selects, closes, and restores details through route navigation', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider');
+    await harness.navigateByUrl('/?system=provider');
     await load();
     await click('[data-scenario-id="z"]');
     expect(TestBed.inject(Router).url).toContain('scenario=z');
     await click('app-scenario-detail button');
     expect(root().querySelector('app-scenario-detail')).toBeNull();
-    await harness.navigateByUrl('/scenarios?system=provider&scenario=z');
+    await harness.navigateByUrl('/?system=provider&scenario=z');
     expect(root().querySelector('app-scenario-detail')).not.toBeNull();
   });
   it('removes stale URL state and discovers new metadata after refresh', async () => {
     await harness.navigateByUrl(
-      '/scenarios?system=provider&category=Astronomy&tag=night&status=201&scenario=z',
+      '/?system=provider&category=Astronomy&tag=night&status=201&scenario=z',
     );
     await load();
     await click('[data-refresh]');
@@ -157,7 +162,7 @@ describe('scenario browser', () => {
         response: { status: 202, body: {} },
       }),
     ]);
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=provider');
+    expect(TestBed.inject(Router).url).toBe('/?system=provider');
     expect(text()).toContain('Shipping');
     expect(text()).toContain('express');
     expect(text()).not.toContain('Astronomy');
@@ -165,16 +170,16 @@ describe('scenario browser', () => {
   });
   it('ignores invalid query values and hides unavailable metadata filters for legacy records', async () => {
     await harness.navigateByUrl(
-      '/scenarios?system=provider&category=missing&group=missing&tag=missing&status=999&scenario=missing',
+      '/?system=provider&category=missing&group=missing&tag=missing&status=999&scenario=missing',
     );
     await load([example('legacy')]);
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=provider');
+    expect(TestBed.inject(Router).url).toBe('/?system=provider');
     expect(root().querySelectorAll('.filters select')).toHaveLength(1);
     expect(text()).toContain('legacy');
     expect(text()).toContain('Uncategorized');
   });
   it('escapes catalog content rather than rendering markup', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider');
+    await harness.navigateByUrl('/?system=provider');
     await load([
       example('unsafe', {
         title: '<script>alert(1)</script>',
@@ -189,7 +194,7 @@ describe('scenario browser', () => {
     [404, 'The catalog isn’t available yet'],
     [500, 'We couldn’t load the catalog'],
   ])('handles HTTP %s and retries', async (status, message) => {
-    await harness.navigateByUrl('/scenarios?system=provider');
+    await harness.navigateByUrl('/?system=provider');
     loadInventory();
     http
       .expectOne('/catalogs/provider')
@@ -201,7 +206,7 @@ describe('scenario browser', () => {
     expect(root().querySelectorAll('[data-scenario-id]')).toHaveLength(4);
   });
   it('handles invalid catalogs and an empty catalog after retry', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider');
+    await harness.navigateByUrl('/?system=provider');
     loadInventory();
     http.expectOne('/catalogs/provider').flush({ catalogVersion: 2, scenarios: [] });
     harness.detectChanges();
@@ -220,12 +225,12 @@ describe('scenario browser', () => {
   }
 
   it('defaults to the first inventory system and lists commits with their metadata', async () => {
-    await harness.navigateByUrl('/scenarios');
+    await harness.navigateByUrl('/');
     loadInventory({
       systems: [{ name: 'alpha', catalogs: inventory.systems[0].catalogs }, ...inventory.systems],
     });
     await load(synthetic, '/catalogs/alpha');
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=alpha');
+    expect(TestBed.inject(Router).url).toBe('/?system=alpha');
     expect(root().querySelector<HTMLSelectElement>('[data-system]')!.value).toBe('alpha');
     const version = root().querySelector<HTMLSelectElement>('[data-version]')!;
     expect([...version.options].map((option) => option.value)).toEqual(['', 'new', 'old']);
@@ -235,7 +240,7 @@ describe('scenario browser', () => {
   });
 
   it('restores a commit and scenario state from the URL', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider&commit=old&tag=night&scenario=z');
+    await harness.navigateByUrl('/?system=provider&commit=old&tag=night&scenario=z');
     await load(synthetic, '/catalogs/provider/old');
     expect(root().querySelector<HTMLSelectElement>('[data-version]')!.value).toBe('old');
     expect(root().querySelector('app-scenario-detail')).not.toBeNull();
@@ -244,13 +249,13 @@ describe('scenario browser', () => {
 
   it('clears scenario state on version change and restores it through history navigation', async () => {
     TestBed.inject(Router).setUpLocationChangeListener();
-    await harness.navigateByUrl('/scenarios?system=provider&tag=night&scenario=z');
+    await harness.navigateByUrl('/?system=provider&tag=night&scenario=z');
     await load();
     await choose('[data-version]', 'old');
     expect(root().querySelector('app-scenario-detail')).toBeNull();
     expect(root().querySelectorAll('[data-scenario-id]')).toHaveLength(0);
     await load(synthetic, '/catalogs/provider/old');
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=provider&commit=old');
+    expect(TestBed.inject(Router).url).toBe('/?system=provider&commit=old');
     TestBed.inject(Location).back();
     await new Promise((resolve) => setTimeout(resolve, 0));
     await harness.fixture.whenStable();
@@ -262,11 +267,11 @@ describe('scenario browser', () => {
     await harness.fixture.whenStable();
     await load(synthetic, '/catalogs/provider/old');
     expect(root().querySelector('app-scenario-detail')).toBeNull();
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=provider&commit=old');
+    expect(TestBed.inject(Router).url).toBe('/?system=provider&commit=old');
   });
 
   it('resets version on system change and cancels superseded catalog requests', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider&commit=old');
+    await harness.navigateByUrl('/?system=provider&commit=old');
     loadInventory({
       systems: [{ name: 'alpha', catalogs: inventory.systems[0].catalogs }, ...inventory.systems],
     });
@@ -277,21 +282,21 @@ describe('scenario browser', () => {
     await choose('[data-system]', 'provider');
     expect(alpha.cancelled).toBe(true);
     await load();
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=provider');
+    expect(TestBed.inject(Router).url).toBe('/?system=provider');
     expect(root().querySelectorAll('[data-scenario-id]')).toHaveLength(4);
   });
 
   it('normalizes unknown systems and commits to available defaults', async () => {
-    await harness.navigateByUrl('/scenarios?system=unknown&commit=missing');
+    await harness.navigateByUrl('/?system=unknown&commit=missing');
     await load();
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=provider');
-    await harness.navigateByUrl('/scenarios?system=provider&commit=missing');
+    expect(TestBed.inject(Router).url).toBe('/?system=provider');
+    await harness.navigateByUrl('/?system=provider&commit=missing');
     await load();
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=provider');
+    expect(TestBed.inject(Router).url).toBe('/?system=provider');
   });
 
   it('preserves selected commits on refresh and falls back when they disappear', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider&commit=old');
+    await harness.navigateByUrl('/?system=provider&commit=old');
     await load(synthetic, '/catalogs/provider/old');
     await click('[data-refresh]');
     await load(synthetic, '/catalogs/provider/old');
@@ -301,15 +306,15 @@ describe('scenario browser', () => {
       systems: [{ name: 'provider', catalogs: [inventory.systems[0].catalogs[0]] }],
     });
     await load();
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=provider');
+    expect(TestBed.inject(Router).url).toBe('/?system=provider');
     await click('[data-refresh]');
     loadInventory({ systems: [{ name: 'replacement', catalogs: [] }] });
     await load(synthetic, '/catalogs/replacement');
-    expect(TestBed.inject(Router).url).toBe('/scenarios?system=replacement');
+    expect(TestBed.inject(Router).url).toBe('/?system=replacement');
   });
 
   it('encodes system and commit path segments', async () => {
-    await harness.navigateByUrl('/scenarios?system=space%20%2F%20name&commit=branch%2Fhash');
+    await harness.navigateByUrl('/?system=space%20%2F%20name&commit=branch%2Fhash');
     loadInventory({
       systems: [
         {
@@ -323,7 +328,7 @@ describe('scenario browser', () => {
   });
 
   it('shows an empty inventory and retries after catalog submission', async () => {
-    await harness.navigateByUrl('/scenarios');
+    await harness.navigateByUrl('/');
     loadInventory({ systems: [] });
     await harness.fixture.whenStable();
     harness.detectChanges();
@@ -344,7 +349,7 @@ describe('scenario browser', () => {
   });
 
   it('shows inventory failures separately and retries', async () => {
-    await harness.navigateByUrl('/scenarios');
+    await harness.navigateByUrl('/');
     http.expectOne('/catalog-inventory').flush({}, { status: 500, statusText: 'Error' });
     harness.detectChanges();
     expect(text()).toContain('We couldn’t load the catalog inventory');
@@ -354,7 +359,7 @@ describe('scenario browser', () => {
   });
 
   it('allows another version to be selected after a catalog failure', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider');
+    await harness.navigateByUrl('/?system=provider');
     loadInventory();
     http.expectOne('/catalogs/provider').flush({}, { status: 404, statusText: 'Missing' });
     harness.detectChanges();
@@ -366,26 +371,24 @@ describe('scenario browser', () => {
   });
 
   it('uses current URL selection when navigation happens during inventory refresh', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider');
+    await harness.navigateByUrl('/?system=provider');
     await load();
     await click('[data-refresh]');
-    await harness.navigateByUrl('/scenarios?system=provider&commit=old');
+    await harness.navigateByUrl('/?system=provider&commit=old');
     await load(synthetic, '/catalogs/provider/old');
     expect(TestBed.inject(Router).url).toContain('commit=old');
     expect(text()).toContain('Astronomy');
   });
 
   it('cancels inventory and payload requests when leaving the library', async () => {
-    await harness.navigateByUrl('/scenarios?system=provider');
+    await harness.navigateByUrl('/?system=provider');
     const pending = http.expectOne('/catalog-inventory');
-    await harness.navigateByUrl('/orders');
+    await harness.navigateByUrl('/test-destination');
     expect(pending.cancelled).toBe(true);
-    http.expectOne('/store/order').flush([]);
-    await harness.navigateByUrl('/scenarios?system=provider');
+    await harness.navigateByUrl('/?system=provider');
     loadInventory();
     const catalog = http.expectOne('/catalogs/provider');
-    await harness.navigateByUrl('/orders');
+    await harness.navigateByUrl('/test-destination');
     expect(catalog.cancelled).toBe(true);
-    http.expectOne('/store/order').flush([]);
   });
 });

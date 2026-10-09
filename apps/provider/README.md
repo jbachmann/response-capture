@@ -191,14 +191,14 @@ HTTP/network errors or the 30-second submission timeout fail the command while
 retaining the generated file. Correct the API connection and rerun the merge.
 Git metadata errors also fail the command. See the
 [catalog API](../catalog/README.md) for storage and lookup behavior.
-The consumer browses submitted catalogs through the catalog API; the provider
+The catalog-ui Scenario library browses submitted catalogs through the catalog API; the provider
 does not expose a catalog-reading endpoint.
 Use synthetic fixtures and keep all scenario assertions inside the recorder
 callback. Clear old recordings before a new run; the merger rejects duplicate
 IDs across runs as well as across suites.
 
 The scenario recordings include optional authored titles, categories, task groups,
-open-ended tags, and descriptions for dynamic browsing in the consumer. The
+open-ended tags, and descriptions for dynamic browsing in catalog-ui. The
 reference [catalog](docs/catalog.json) contains 55 annotated examples. Regenerate
 it from a fresh recording/merge run; do not hand-edit generated request/response
 data. See the [recorder metadata guide](test/support/api-scenario-recorder/README.md#browsing-metadata)

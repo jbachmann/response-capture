@@ -174,12 +174,12 @@ await recorder.recordScenario(
 Author these labels at the recording call site. Explain each variation, relevant
 setup, and observed result; recorded examples do not include executable setup.
 Titles, categories, and groups must be nonblank strings. Tags must be unique,
-nonblank strings. Category/group/tag vocabularies are open-ended: consumer UI
+nonblank strings. Category/group/tag vocabularies are open-ended: catalog-ui
 choices come from the catalog, without domain-specific configuration. Metadata is
 snapshotted during recording and preserved during deterministic merging.
 
 These fields are an additive extension of schema/catalog version 1. Updated
 tooling accepts legacy records without metadata. Older strict validators reject
 the added fields and must be updated before reading enriched recordings.
-The consumer's fallbacks display IDs and an Uncategorized section; they do not
+The Scenario library's fallbacks display IDs and an Uncategorized section; they do not
 infer categories or task names from paths or ID conventions.

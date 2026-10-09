@@ -2,6 +2,18 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.26.
 
+Install dependencies from the repository root with Node.js 24 and npm 11.8.0:
+
+```sh
+nvm use
+npm ci
+npm run dev --workspace=@response-capture/consumer
+```
+
+The commands below run from `apps/consumer` after that installation. Use
+`npm exec -- ng` in place of `ng` if Angular CLI is not on your PATH.
+See the [workspace README](../../README.md) for combined development and checks.
+
 ## Development server
 
 To start a local development server, run:
@@ -41,7 +53,7 @@ This will compile your project and store the build artifacts in the `dist/` dire
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
 
 ```bash
-ng test
+npm test
 ```
 
 ## Running end-to-end tests
@@ -53,6 +65,7 @@ ng e2e
 ```
 
 Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+No UI end-to-end runner is configured in this repository yet.
 
 ## Additional Resources
 

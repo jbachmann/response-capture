@@ -6,13 +6,18 @@ A NestJS training and education API using classic Swagger Petstore models and si
 
 ## Setup
 
-Use **Node.js 24** (see `.nvmrc` and `package.json`) and npm:
+Use **Node.js 24** and **npm 11.8.0** (see the root `.nvmrc` and `package.json`).
+Install from the repository root:
 
 ```sh
 nvm use
 npm ci
-npm run start:dev
+npm run dev --workspace=@response-capture/provider
 ```
+
+After installation, the commands below can be run from `apps/provider`; from
+the root, append `--workspace=@response-capture/provider` to an npm command.
+See the [workspace README](../../README.md) for combined development and checks.
 
 The server listens on port `3000`; set `PORT` to override it. For a production
 build, run `npm run build` followed by `npm run start:prod`.
@@ -28,7 +33,9 @@ the same validation and documentation setup.
 ## Database configuration
 
 `DATABASE_PATH` defaults to `./data/petstore.sqlite`, relative to the process's
-working directory. Parent directories and the two tables (`pets`, `orders`)
+working directory (`apps/provider` when launched through workspace scripts).
+The default file is therefore `apps/provider/data/petstore.sqlite` from the
+repository root. Parent directories and the two tables (`pets`, `orders`)
 are created at startup, starting empty. Training endpoints can reset the data. Existing records survive restarts.
 
 ```sh

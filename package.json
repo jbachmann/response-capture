@@ -1,0 +1,25 @@
+{
+  "name": "response-capture",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "npm@11.8.0",
+  "engines": {
+    "node": ">=24 <25",
+    "npm": "11.8.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "dev": "turbo run dev",
+    "lint:provider": "npm run lint --workspace=@response-capture/provider",
+    "test:e2e": "turbo run test:e2e --filter=@response-capture/provider",
+    "scenarios:merge": "turbo run scenarios:merge --filter=@response-capture/provider"
+  },
+  "devDependencies": {
+    "turbo": "^2.9.0"
+  }
+}

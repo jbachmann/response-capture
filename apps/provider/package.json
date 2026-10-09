@@ -1,5 +1,5 @@
 {
-  "name": "response-capture",
+  "name": "@response-capture/provider",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -20,7 +20,8 @@
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "scenarios:merge": "tsc --project test/support/api-scenario-recorder/tsconfig.cli.json && node .tmp/api-scenario-recorder/merge.js"
+    "scenarios:merge": "tsc --project test/support/api-scenario-recorder/tsconfig.cli.json && node .tmp/api-scenario-recorder/merge.js",
+    "dev": "nest start --watch"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -48,8 +49,5 @@
     "typescript": "^6.0.2",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.1.2"
-  },
-  "engines": {
-    "node": ">=24 <25"
   }
 }

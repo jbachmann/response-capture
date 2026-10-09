@@ -18,7 +18,7 @@ import { ChangeDetectionStrategy, Component, computed, input, signal } from '@an
       display: block;
       aspect-ratio: 4/3;
       overflow: hidden;
-      background: #edf2eb;
+      background: var(--subtle);
       border-radius: 8px;
     }
     img {
@@ -31,7 +31,7 @@ import { ChangeDetectionStrategy, Component, computed, input, signal } from '@an
       place-items: center;
       height: 100%;
       font-size: 3rem;
-      color: #216349;
+      color: var(--accent);
     }
   `,
 })

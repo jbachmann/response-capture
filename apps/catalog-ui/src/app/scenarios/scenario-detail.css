@@ -43,8 +43,8 @@ h3 {
   list-style: none;
 }
 .tags li {
-  background: #eef2ee;
-  color: #3f5149;
+  background: var(--subtle);
+  color: var(--ink);
   border-radius: 4px;
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
@@ -53,7 +53,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  background: #f1f5f2;
+  background: var(--subtle);
   border-left: 3px solid var(--accent);
   padding: 0.9rem 1rem;
   margin-top: 1.5rem;
@@ -78,7 +78,7 @@ pre {
     SFMono-Regular,
     Consolas,
     monospace;
-  background: #f6f7f5;
+  background: var(--code);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 1rem;

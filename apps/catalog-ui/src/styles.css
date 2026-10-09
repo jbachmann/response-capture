@@ -1,9 +1,22 @@
 @import 'tailwindcss';
 :root {
-  --ink: #24382f;
-  --muted: #57685e;
-  --accent: #216349;
-  --border: #dce2db;
+  color-scheme: light dark;
+  --ink: light-dark(#24382f, #e4eee7);
+  --muted: light-dark(#57685e, #afc0b4);
+  --accent: light-dark(#216349, #8ad8af);
+  --border: light-dark(#dce2db, #465b4e);
+  --page: light-dark(#fafbf8, #121c17);
+  --surface: light-dark(#ffffff, #1b2921);
+  --subtle: light-dark(#edf2eb, #2b3e31);
+  --input-border: light-dark(#79877d, #819c8a);
+  --focus: light-dark(#287654, #8ad8af);
+  --on-accent: light-dark(#ffffff, #122a1c);
+  --placeholder: light-dark(#657069, #afc0b4);
+  --hover: light-dark(#fbfdfb, #24382c);
+  --selected: light-dark(#f6faf7, #2d4636);
+  --hover-border: light-dark(#7d9b8e, #8ad8af);
+  --code: light-dark(#f6f7f5, #142019);
+  --soft-surface: light-dark(#f4f6f2, #202f25);
   font-family:
     Inter,
     -apple-system,
@@ -11,7 +24,7 @@
     'Segoe UI',
     sans-serif;
   color: var(--ink);
-  background: #fafbf8;
+  background: var(--page);
 }
 body {
   margin: 0;
@@ -30,7 +43,7 @@ a {
   color: inherit;
 }
 :focus-visible {
-  outline: 3px solid #287654;
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
 .eyebrow {
@@ -46,7 +59,7 @@ a {
   justify-content: space-between;
   gap: 1rem;
   padding: 1.25rem max(1.5rem, calc((100vw - 1320px) / 2));
-  background: #fff;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
 .app-brand {
@@ -65,7 +78,7 @@ a {
   left: 1rem;
   top: -100px;
   z-index: 10;
-  background: #fff;
+  background: var(--surface);
   padding: 1rem;
 }
 .skip-link:focus {
@@ -76,4 +89,25 @@ a {
     align-items: start;
     flex-direction: column;
   }
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+.theme-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.theme-control select {
+  padding: 0.5rem;
+  border: 1px solid var(--input-border);
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--surface);
 }

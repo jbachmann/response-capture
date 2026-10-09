@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 max(1.5rem, calc((100vw - 1320px) / 2));
-  background: #fff;
+  background: var(--surface);
 }
 .brand {
   display: flex;
@@ -59,10 +59,11 @@ h1 span {
   border: 1px solid var(--border);
   padding: 0.7rem 1rem;
   border-radius: 6px;
-  background: #fff;
+  background: var(--surface);
   font-size: 0.85rem;
   cursor: pointer;
   white-space: nowrap;
+  color: var(--ink);
 }
 .refresh:disabled {
   opacity: 0.6;
@@ -70,7 +71,7 @@ h1 span {
 }
 .primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   border-color: var(--accent);
   margin-top: 1rem;
 }
@@ -81,7 +82,7 @@ h1 span {
   margin-bottom: 1.5rem;
 }
 .filters {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1.4rem;
@@ -96,9 +97,9 @@ label {
 }
 input,
 select {
-  border: 1px solid #c4cbc5;
+  border: 1px solid var(--input-border);
   border-radius: 5px;
-  background: #fff;
+  background: var(--surface);
   padding: 0.7rem 0.8rem;
   font-size: 0.85rem;
   color: var(--ink);
@@ -106,7 +107,7 @@ select {
   width: 100%;
 }
 input::placeholder {
-  color: #657069;
+  color: var(--placeholder);
 }
 .filter-row {
   display: grid;
@@ -138,7 +139,7 @@ input::placeholder {
 }
 .detail-region,
 .detail-placeholder {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   position: sticky;
@@ -149,7 +150,7 @@ input::placeholder {
 .detail-placeholder {
   padding: 4rem 2.5rem;
   text-align: center;
-  background: #f4f6f2;
+  background: var(--soft-surface);
   border-style: dashed;
 }
 .placeholder-icon {
@@ -159,7 +160,7 @@ input::placeholder {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #e6ede7;
+  background: var(--subtle);
   font-size: 1.5rem;
   color: var(--accent);
   margin-bottom: 1rem;
@@ -175,7 +176,7 @@ input::placeholder {
   margin-top: 0.5rem;
 }
 .state {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 3rem 1.5rem;

@@ -9,6 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
+import { ThemeService } from './theme.service';
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, RouterLink],
@@ -17,11 +18,24 @@ import { filter } from 'rxjs';
     >
     <header class="app-header">
       <a routerLink="/" class="app-brand">Scenario library<span>Response Capture</span></a>
+      <label class="theme-control"
+        >Theme
+        <select
+          #themeSelect
+          [value]="theme.preference()"
+          (change)="theme.setPreference(themeSelect.value)"
+        >
+          <option value="system">System</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
     </header>
     <div id="page-content" tabindex="-1"><router-outlet /></div>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
+  protected readonly theme = inject(ThemeService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   constructor() {
     const injector = inject(Injector);

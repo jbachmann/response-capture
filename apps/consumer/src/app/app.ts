@@ -9,21 +9,37 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
+import { ThemeService } from './theme.service';
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `<a class="skip-link" href="#page-content">Skip to content</a>
     <header class="app-header">
       <a routerLink="/pets" class="app-brand">Petstore<span>Response Capture</span></a>
-      <nav aria-label="Main navigation">
-        <a routerLink="/pets" routerLinkActive="active" ariaCurrentWhenActive="page">Pets</a
-        ><a routerLink="/orders" routerLinkActive="active" ariaCurrentWhenActive="page">Orders</a>
-      </nav>
+      <div class="header-actions">
+        <nav aria-label="Main navigation">
+          <a routerLink="/pets" routerLinkActive="active" ariaCurrentWhenActive="page">Pets</a
+          ><a routerLink="/orders" routerLinkActive="active" ariaCurrentWhenActive="page">Orders</a>
+        </nav>
+        <label class="theme-control"
+          >Theme
+          <select
+            #themeSelect
+            [value]="theme.preference()"
+            (change)="theme.setPreference(themeSelect.value)"
+          >
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+      </div>
     </header>
     <div id="page-content" tabindex="-1"><router-outlet /></div>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
+  protected readonly theme = inject(ThemeService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   constructor() {
     const injector = inject(Injector);

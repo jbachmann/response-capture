@@ -1,9 +1,18 @@
 @import 'tailwindcss';
 :root {
-  --ink: #24382f;
-  --muted: #57685e;
-  --accent: #216349;
-  --border: #dce2db;
+  color-scheme: light dark;
+  --ink: light-dark(#24382f, #e4eee7);
+  --muted: light-dark(#57685e, #afc0b4);
+  --accent: light-dark(#216349, #8ad8af);
+  --border: light-dark(#dce2db, #465b4e);
+  --page: light-dark(#fafbf8, #121c17);
+  --surface: light-dark(#ffffff, #1b2921);
+  --subtle: light-dark(#edf2eb, #2b3e31);
+  --input-border: light-dark(#79877d, #819c8a);
+  --focus: light-dark(#287654, #8ad8af);
+  --danger: light-dark(#9b2525, #ffb4ab);
+  --on-accent: light-dark(#ffffff, #122a1c);
+  --placeholder: light-dark(#657069, #afc0b4);
   font-family:
     Inter,
     -apple-system,
@@ -11,7 +20,7 @@
     'Segoe UI',
     sans-serif;
   color: var(--ink);
-  background: #fafbf8;
+  background: var(--page);
 }
 body {
   margin: 0;
@@ -30,7 +39,7 @@ a {
   color: inherit;
 }
 :focus-visible {
-  outline: 3px solid #287654;
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
 .eyebrow {
@@ -46,7 +55,7 @@ a {
   justify-content: space-between;
   gap: 1rem;
   padding: 1.25rem max(1.5rem, calc((100vw - 1320px) / 2));
-  background: #fff;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
 .app-brand {
@@ -78,7 +87,7 @@ a {
   left: 1rem;
   top: -100px;
   z-index: 10;
-  background: #fff;
+  background: var(--surface);
   padding: 1rem;
 }
 .skip-link:focus {
@@ -122,7 +131,7 @@ a {
   margin: 1rem 0;
 }
 .petstore .panel {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1.5rem;
@@ -135,7 +144,7 @@ a {
   margin: 1.5rem 0;
 }
 .petstore .inventory p {
-  background: #edf2eb;
+  background: var(--subtle);
   padding: 1rem;
   border-radius: 8px;
 }
@@ -164,22 +173,27 @@ a {
   width: 100%;
   padding: 0.7rem;
   color: var(--ink);
-  background: white;
-  border: 1px solid #79877d;
+  background: var(--surface);
+  border: 1px solid var(--input-border);
   border-radius: 5px;
   font: inherit;
   min-width: 0;
 }
+.petstore input::placeholder,
+.petstore textarea::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
 .petstore input[aria-invalid='true'] {
-  border-color: #a22828;
+  border-color: var(--danger);
 }
 .petstore button,
 .petstore .button {
   display: inline-block;
   padding: 0.7rem 1rem;
-  border: 1px solid #79877d;
+  border: 1px solid var(--input-border);
   border-radius: 6px;
-  background: white;
+  background: var(--surface);
   color: var(--ink);
   cursor: pointer;
   text-decoration: none;
@@ -187,12 +201,12 @@ a {
 }
 .petstore .primary {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 .petstore .danger {
-  color: #9b2525;
-  border-color: #9b2525;
+  color: var(--danger);
+  border-color: var(--danger);
 }
 .petstore button:disabled {
   opacity: 0.65;
@@ -228,7 +242,7 @@ a {
   display: inline-block;
   padding: 0.2rem 0.55rem;
   border-radius: 5px;
-  background: #edf2eb;
+  background: var(--subtle);
   margin-right: 0.3rem;
   font-size: 0.85rem;
 }
@@ -244,7 +258,7 @@ a {
 }
 .petstore .form-stack [role='alert'],
 .petstore [role='alert'] {
-  color: #9b2525;
+  color: var(--danger);
 }
 .petstore fieldset {
   border: 1px solid var(--border);
@@ -297,4 +311,31 @@ a {
     padding: 0.6rem;
     font-size: 0.85rem;
   }
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.theme-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.theme-control select {
+  padding: 0.5rem;
+  border: 1px solid var(--input-border);
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--surface);
 }

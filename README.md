@@ -1,114 +1,126 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# SQLite Petstore API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A NestJS API using classic Swagger Petstore models and singular `/pet` and
+`/store` routes. Pets and orders are persisted in SQLite. The original
+`GET /` endpoint still returns `Hello World!`.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Setup
 
-## Description
+Use **Node.js 24** (see `.nvmrc` and `package.json`) and npm:
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
+```sh
+nvm use
+npm ci
+npm run start:dev
 ```
 
-## Compile and run the project
+The server listens on port `3000`; set `PORT` to override it. For a production
+build, run `npm run build` followed by `npm run start:prod`.
 
-```bash
-# development
-$ npm run start
+SQLite uses Node's built-in `node:sqlite` `DatabaseSync`, with no ORM or native
+SQLite dependency. Node 24 emits an `ExperimentalWarning` for SQLite; this is
+expected and does not prevent startup. See the [Node SQLite documentation](https://nodejs.org/docs/latest-v24.x/api/sqlite.html).
 
-# watch mode
-$ npm run start:dev
+Swagger UI is available at **http://localhost:3000/docs** and the OpenAPI JSON
+at **http://localhost:3000/docs-json**. Both production and end-to-end tests use
+the same validation and documentation setup.
 
-# production mode
-$ npm run start:prod
+## Database configuration
+
+`DATABASE_PATH` defaults to `./data/petstore.sqlite`, relative to the process's
+working directory. Parent directories and the two tables (`pets`, `orders`)
+are created at startup, starting empty. Existing records survive restarts.
+
+```sh
+DATABASE_PATH=./data/local.sqlite npm run start:dev
 ```
 
-## Run tests
+Use `DATABASE_PATH=:memory:` for an ephemeral database. File databases and their
+journals are ignored by Git. Category, tags, and photo URLs are stored as JSON
+in each pet record; orders reference pets through a foreign key. Foreign keys
+are enabled on the shared connection, which closes on application shutdown,
+including SIGINT/SIGTERM. SQL resides in the pet and store services and uses
+bound parameters. Database operations are synchronous.
 
-```bash
-# unit tests
-$ npm run test
+## API
 
-# e2e tests
-$ npm run test:e2e
+| Method | Route | Behavior |
+| --- | --- | --- |
+| POST | `/pet` | Create a pet, generating its ID (201) |
+| GET | `/pet` | List all pets in ID order (200) |
+| PUT | `/pet` | Replace an existing pet using its required ID (200) |
+| GET | `/pet/findByStatus?status=available,pending` | Match any supplied status (200) |
+| GET | `/pet/findByTags?tags=cute&tags=small` | Match any supplied tag name (200) |
+| GET | `/pet/:petId` | Read a pet (200) |
+| DELETE | `/pet/:petId` | Delete an unreferenced pet (204) |
+| GET | `/store/inventory` | Count each pet status, including zero counts (200) |
+| POST | `/store/order` | Create an order for an existing pet (201) |
+| GET | `/store/order/:orderId` | Read an order (200) |
+| DELETE | `/store/order/:orderId` | Delete an order (204) |
 
-# test coverage
-$ npm run test:cov
+Pets require a nonblank `name` and a `photoUrls` array of strings (which may be
+empty). Optional category and tag objects accept positive safe integer `id`
+and nonblank `name` fields. Pet status is `available` (default), `pending`, or
+`sold`; tags default to `[]`. `PUT /pet` replaces the record: omitted category
+is removed, and omitted tags and status reset to their defaults.
+
+Filters accept repeated query parameters, comma-separated values, or both;
+results match any value and appear in ID order. Missing or empty filters and
+invalid statuses return 400. Tag searches match tag names exactly.
+
+Orders require an existing positive safe integer `petId`. `quantity` is a
+positive safe integer defaulting to `1`; optional `shipDate` is an ISO 8601
+date-time. Status is `placed` (default), `approved`, or `delivered`; `complete`
+is a boolean defaulting to `false`. Creating or deleting orders leaves pet
+status unchanged. Orders have no customer or user reference.
+
+IDs are generated on creation. Lookup IDs must be positive safe integers.
+Unknown properties, invalid nested fields, invalid enums, and other malformed
+inputs return **400**. Missing pets or orders (including the pet on a new order)
+return **404**. Deleting a pet referenced by an order returns **409**.
+Delete the referencing orders before deleting that pet.
+
+## Examples
+
+```sh
+# Create a pet (do not send an ID)
+curl -X POST http://localhost:3000/pet \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Milo","photoUrls":[],"category":{"name":"Cats"},"tags":[{"name":"cute"}]}'
+
+# Replace pet 1
+curl -X PUT http://localhost:3000/pet \
+  -H 'Content-Type: application/json' \
+  -d '{"id":1,"name":"Milo","photoUrls":[],"status":"pending"}'
+
+curl 'http://localhost:3000/pet/findByStatus?status=available&status=pending'
+curl 'http://localhost:3000/pet/findByTags?tags=cute,small'
+curl http://localhost:3000/store/inventory
+
+# Order pet 1
+curl -X POST http://localhost:3000/store/order \
+  -H 'Content-Type: application/json' \
+  -d '{"petId":1,"quantity":2,"shipDate":"2026-10-10T12:00:00Z"}'
+curl http://localhost:3000/store/order/1
+
+# Remove the order before the pet
+curl -X DELETE http://localhost:3000/store/order/1
+curl -X DELETE http://localhost:3000/pet/1
 ```
 
-## Deployment
+## Verification and scope
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```sh
+npm test
+npm run test:e2e
+npm run build
+npm run lint
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+End-to-end tests use isolated temporary SQLite files, clean them up, and verify
+persistence after application shutdown and reopening. They cover CRUD,
+filters, inventory, defaults, relationship conflicts, validation, and Swagger
+UI and request/response schemas.
 
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This API includes no user accounts, authentication, uploads, bulk operations,
+XML, pagination, payments, seed data, or deployment changes.

@@ -7,6 +7,8 @@ import { tmpdir } from 'node:os';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { setupApp } from '../src/setup-app.js';
+import { DatabaseProvider } from '../src/pet-store/database.provider.js';
+import { TrainingService } from '../src/pet-store/training.service.js';
 
 describe('SQLite Petstore (e2e)', () => {
   let app: INestApplication;
@@ -193,6 +195,96 @@ describe('SQLite Petstore (e2e)', () => {
     const next = (await api().post('/pet').send(pet).expect(201)).body;
     expect(next.id).toBeGreaterThan(savedPet.id);
   });
+  it('replaces existing data with repeatable static training data', async () => {
+    const existing = (await api().post('/pet').send(pet).expect(201)).body;
+    await api().post('/store/order').send({ petId: existing.id }).expect(201);
+    const summary = {
+      pets: 6,
+      orders: 3,
+      inventory: { available: 2, pending: 2, sold: 2 },
+    };
+    await api().post('/training/seed').expect(200).expect(summary);
+    const pets = (await api().get('/pet').expect(200)).body;
+    expect(pets.map((p: { name: string }) => p.name)).toEqual([
+      'Milo',
+      'Luna',
+      'Bella',
+      'Max',
+      'Coco',
+      'Pip',
+    ]);
+    expect(pets.map((p: { id: number }) => p.id)).toEqual([1, 2, 3, 4, 5, 6]);
+    await api().get('/store/inventory').expect(200).expect(summary.inventory);
+    const orders = [];
+    for (let id = 1; id <= 3; id++) {
+      const order = (await api().get(`/store/order/${id}`).expect(200)).body;
+      expect(pets.some((p: { id: number }) => p.id === order.petId)).toBe(true);
+      orders.push(order);
+    }
+    expect(orders.map((o) => o.status)).toEqual([
+      'placed',
+      'approved',
+      'delivered',
+    ]);
+    expect(orders[2].complete).toBe(true);
+    await api().get('/store/order/4').expect(404);
+    await api().delete('/pet/1').expect(409);
+    await api()
+      .put('/pet')
+      .send({ id: 1, name: 'Changed', photoUrls: [] })
+      .expect(200);
+    await api().post('/pet').send(pet).expect(201);
+    await api().post('/store/order').send({ petId: 7 }).expect(201);
+    await api().post('/training/seed').expect(200).expect(summary);
+    await api().get('/pet').expect(200).expect(pets);
+    for (const order of orders)
+      await api().get(`/store/order/${order.id}`).expect(200).expect(order);
+    await api().get('/pet/7').expect(404);
+    await api().get('/store/order/4').expect(404);
+    await app.close();
+    await open();
+    await api().get('/pet').expect(200).expect(pets);
+    await api().get('/store/order/3').expect(200).expect(orders[2]);
+  });
+  it('clears orders before pets, remains reusable, and persists the empty database', async () => {
+    await api().post('/training/seed').expect(200);
+    await api()
+      .delete('/training/database')
+      .expect(204)
+      .then((r) => expect(r.text).toBe(''));
+    await api().delete('/training/database').expect(204);
+    await app.close();
+    await open();
+    await api().get('/pet').expect(200).expect([]);
+    await api()
+      .get('/store/inventory')
+      .expect(200)
+      .expect({ available: 0, pending: 0, sold: 0 });
+    for (let id = 1; id <= 3; id++)
+      await api().get(`/store/order/${id}`).expect(404);
+    const created = (await api().post('/pet').send(pet).expect(201)).body;
+    expect(created.id).toBe(1);
+    const order = (
+      await api().post('/store/order').send({ petId: created.id }).expect(201)
+    ).body;
+    expect(order.id).toBe(1);
+    await api().delete('/pet/1').expect(409);
+  });
+  it('rolls back a failed seed without losing original records or ID sequences', async () => {
+    const existing = (await api().post('/pet').send(pet).expect(201)).body;
+    const order = (
+      await api().post('/store/order').send({ petId: existing.id }).expect(201)
+    ).body;
+    const db = app.get(DatabaseProvider).db;
+    db.exec(
+      "CREATE TEMP TRIGGER fail_seed BEFORE INSERT ON pets WHEN NEW.name = 'Luna' BEGIN SELECT RAISE(ABORT, 'Seed failure'); END",
+    );
+    expect(() => app.get(TrainingService).seed()).toThrow('Seed failure');
+    db.exec('DROP TRIGGER fail_seed');
+    await api().get('/pet').expect(200).expect([existing]);
+    await api().get(`/store/order/${order.id}`).expect(200).expect(order);
+    expect((await api().post('/pet').send(pet).expect(201)).body.id).toBe(2);
+  });
   it.each(['0', '-1', '1.5', 'abc', '1e2', '9007199254740992'])(
     'rejects malformed ID %s',
     async (id) => {
@@ -318,6 +410,14 @@ describe('SQLite Petstore (e2e)', () => {
     expect(
       document.paths['/pet/findByStatus'].get.parameters[0].schema.items.enum,
     ).toEqual(['available', 'pending', 'sold']);
+    expect(
+      document.paths['/training/seed'].post.responses['200'].content[
+        'application/json'
+      ].schema.$ref,
+    ).toBe('#/components/schemas/SeedResultDto');
+    expect(
+      document.paths['/training/database'].delete.responses,
+    ).toHaveProperty('204');
     expect(document.paths).not.toHaveProperty('/user');
   });
 });

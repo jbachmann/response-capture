@@ -1,6 +1,6 @@
 # SQLite Petstore API
 
-A NestJS API using classic Swagger Petstore models and singular `/pet` and
+A NestJS training and education API using classic Swagger Petstore models and singular `/pet` and
 `/store` routes. Pets and orders are persisted in SQLite. The original
 `GET /` endpoint still returns `Hello World!`.
 
@@ -29,7 +29,7 @@ the same validation and documentation setup.
 
 `DATABASE_PATH` defaults to `./data/petstore.sqlite`, relative to the process's
 working directory. Parent directories and the two tables (`pets`, `orders`)
-are created at startup, starting empty. Existing records survive restarts.
+are created at startup, starting empty. Training endpoints can reset the data. Existing records survive restarts.
 
 ```sh
 DATABASE_PATH=./data/local.sqlite npm run start:dev
@@ -57,6 +57,8 @@ bound parameters. Database operations are synchronous.
 | POST | `/store/order` | Create an order for an existing pet (201) |
 | GET | `/store/order/:orderId` | Read an order (200) |
 | DELETE | `/store/order/:orderId` | Delete an order (204) |
+| POST | `/training/seed` | Clear and repopulate static training data (200) |
+| DELETE | `/training/database` | Clear all pets and orders (204) |
 
 Pets require a nonblank `name` and a `photoUrls` array of strings (which may be
 empty). Optional category and tag objects accept positive safe integer `id`
@@ -79,6 +81,34 @@ Unknown properties, invalid nested fields, invalid enums, and other malformed
 inputs return **400**. Missing pets or orders (including the pet on a new order)
 return **404**. Deleting a pet referenced by an order returns **409**.
 Delete the referencing orders before deleting that pet.
+
+## Training database resets
+
+These unauthenticated endpoints are intended for classroom exercises. Both
+replace the current database contents and reset pet and order IDs. They take
+no request body and are available in Swagger UI under `training`.
+
+```sh
+# Replace existing data with the same static dataset each time
+curl -X POST http://localhost:3000/training/seed
+# Response: {"pets":6,"orders":3,"inventory":{"available":2,"pending":2,"sold":2}}
+
+# Remove all pets and orders; returns 204 with no body
+curl -X DELETE http://localhost:3000/training/database
+```
+
+The seed contains Milo, Luna, Bella, Max, Coco, and Pip, with categories, tags,
+and all three pet statuses. Three orders cover `placed`, `approved`, and
+`delivered`, including shipping dates and completion flags. Inventory is
+computed from pets rather than stored separately. Seeding preserves those
+pet statuses regardless of their orders.
+
+Both operations use a transaction and delete orders before pets so foreign
+keys remain enabled. If seeding fails, the original data is restored.
+Repeated seeding produces the same data and IDs; repeated clearing succeeds
+on an empty database. Resetting retains the schema and the database file.
+No data is automatically seeded at startup. Static examples live in
+`src/pet-store/seed-data.ts`.
 
 ## Examples
 
@@ -123,4 +153,4 @@ filters, inventory, defaults, relationship conflicts, validation, and Swagger
 UI and request/response schemas.
 
 This API includes no user accounts, authentication, uploads, bulk operations,
-XML, pagination, payments, seed data, or deployment changes.
+XML, pagination, payments, or deployment changes.

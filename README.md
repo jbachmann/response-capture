@@ -39,8 +39,9 @@ Use `DATABASE_PATH=:memory:` for an ephemeral database. File databases and their
 journals are ignored by Git. Category, tags, and photo URLs are stored as JSON
 in each pet record; orders reference pets through a foreign key. Foreign keys
 are enabled on the shared connection, which closes on application shutdown,
-including SIGINT/SIGTERM. SQL resides in the pet and store services and uses
-bound parameters. Database operations are synchronous.
+including SIGINT/SIGTERM. Pet and order repositories own CRUD SQL and row
+mapping, using bound parameters. Services apply defaults and translate
+application errors. Database operations are synchronous.
 
 ## API
 
@@ -148,9 +149,10 @@ npm run lint
 ```
 
 End-to-end tests use isolated temporary SQLite files, clean them up, and verify
-persistence after application shutdown and reopening. They cover CRUD,
-filters, inventory, defaults, relationship conflicts, validation, and Swagger
-UI and request/response schemas.
+persistence after application shutdown and reopening. Feature suites share
+application setup and cover CRUD, filters, inventory, defaults, relationship
+conflicts, validation, and Swagger UI and request/response schemas. Repository
+tests exercise serialization, constraints, and shared transactions directly.
 
 This API includes no user accounts, authentication, uploads, bulk operations,
 XML, pagination, payments, or deployment changes.
@@ -159,7 +161,7 @@ XML, pagination, payments, or deployment changes.
 
 Integration tests can explicitly record asserted JSON interactions using the
 [test-only API scenario recorder](test/support/api-scenario-recorder/README.md).
-The Petstore end-to-end suite records 55 named scenarios covering pet and order
+The Petstore end-to-end suites record 55 named scenarios covering pet and order
 CRUD, inventory, conflicts, persistence, training resets, invalid IDs, and empty
 responses. Recorders flush after each opted-in test completes its assertions.
 

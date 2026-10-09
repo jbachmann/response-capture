@@ -18,16 +18,18 @@ export interface ScenarioTest extends PromiseLike<Response> {
   expect(body: string | RegExp | object): ScenarioTest;
   expect(field: string, value: string | RegExp): ScenarioTest;
 }
+
 function expectations(test: Test): ScenarioTest {
   const wrapper: ScenarioTest = {
     expect(...args: unknown[]) {
       if (
         args.length > 2 ||
         (args.length === 2 && typeof args[1] === 'function')
-      )
+      ) {
         throw new Error(
           'Use awaited expectations; callback-style .expect() is unsupported',
         );
+      }
       (test.expect as (...args: unknown[]) => Test)(...args);
       return wrapper;
     },
@@ -36,12 +38,61 @@ function expectations(test: Test): ScenarioTest {
   };
   return wrapper;
 }
+
+function snapshotRequest(example: RequestExample, id: string): RequestExample {
+  // Snapshot before asynchronous assertions or fixture mutation can change it.
+  const snapshot = JSON.parse(JSON.stringify(example)) as RequestExample;
+  validateRequest(snapshot, `Scenario ${id}`);
+  return snapshot;
+}
+
+function createManagedRequest(
+  app: App,
+  snapshot: RequestExample,
+  hasBody: boolean,
+): Test {
+  const test = new request.Test(app, snapshot.method, snapshot.path).redirects(
+    0,
+  );
+  if (hasBody) {
+    test.type('json').send(JSON.stringify(snapshot.body));
+  }
+  return test;
+}
+
+function decodeResponse(observed: Response, id: string): Scenario['response'] {
+  const contentType = observed.headers['content-type'] as string | undefined;
+  if (contentType !== undefined && !isJsonContentType(contentType)) {
+    throw new Error(
+      `Scenario ${id}: response.content-type ${contentType} is unsupported; only JSON or absent empty bodies are supported`,
+    );
+  }
+  let body: Json = null;
+  if (observed.text !== undefined && observed.text !== '') {
+    if (!contentType) {
+      throw new Error(`Scenario ${id}: response.body has no JSON content type`);
+    }
+    try {
+      body = JSON.parse(observed.text) as Json;
+    } catch {
+      throw new Error(`Scenario ${id}: response.body is not valid JSON`);
+    }
+  }
+  return {
+    status: observed.status,
+    ...(contentType ? { headers: { 'content-type': contentType } } : {}),
+    body,
+  };
+}
+
 export function createScenarioRecorder(options: {
   app: App;
   suiteId: string;
   outputDirectory: string;
 }) {
-  if (!options.suiteId.trim()) throw new Error('suiteId must be nonempty');
+  if (!options.suiteId.trim()) {
+    throw new Error('suiteId must be nonempty');
+  }
   const suite = createHash('sha256')
     .update(options.suiteId)
     .digest('hex')
@@ -68,10 +119,12 @@ export function createScenarioRecorder(options: {
         requestMatch?: RequestExample['match'];
       } = {},
     ): Promise<Response> {
-      if (sealed)
+      if (sealed) {
         throw new Error(`Scenario ${id}: recorder is closed after flush()`);
-      if (scenarios.has(id) || pendingIds.has(id))
+      }
+      if (scenarios.has(id) || pendingIds.has(id)) {
         throw new Error(`Duplicate scenario ID ${id}`);
+      }
       const example: RequestExample = {
         ...descriptor,
         body: descriptor.body === undefined ? null : descriptor.body,
@@ -89,53 +142,26 @@ export function createScenarioRecorder(options: {
         response: { status: 200, body: null },
       };
       validateScenario(candidate);
-      // Snapshot before asynchronous assertions or fixture mutation can change it.
-      const snapshot = JSON.parse(JSON.stringify(example)) as RequestExample;
-      validateRequest(snapshot, `Scenario ${id}`);
+      const snapshot = snapshotRequest(example, id);
       pendingIds.add(id);
       try {
-        const test = new request.Test(
+        const test = createManagedRequest(
           options.app,
-          snapshot.method,
-          snapshot.path,
-        ).redirects(0);
-        if (descriptor.body !== undefined)
-          test.type('json').send(JSON.stringify(snapshot.body));
+          snapshot,
+          descriptor.body !== undefined,
+        );
         const response = await assert(expectations(test));
         // Always await the managed interaction even if the callback returned another response.
         const observed = await test;
-        if (response !== observed)
+        if (response !== observed) {
           throw new Error(
             `Scenario ${id}: assertion callback must return the managed request's response`,
           );
-        const contentType = observed.headers['content-type'] as
-          string | undefined;
-        if (contentType !== undefined && !isJsonContentType(contentType))
-          throw new Error(
-            `Scenario ${id}: response.content-type ${contentType} is unsupported; only JSON or absent empty bodies are supported`,
-          );
-        let body: Json = null;
-        if (observed.text !== undefined && observed.text !== '') {
-          if (!contentType)
-            throw new Error(
-              `Scenario ${id}: response.body has no JSON content type`,
-            );
-          try {
-            body = JSON.parse(observed.text) as Json;
-          } catch {
-            throw new Error(`Scenario ${id}: response.body is not valid JSON`);
-          }
         }
         const scenario = {
           ...candidate,
           request: snapshot,
-          response: {
-            status: observed.status,
-            ...(contentType
-              ? { headers: { 'content-type': contentType } }
-              : {}),
-            body,
-          },
+          response: decodeResponse(observed, id),
         };
         validateScenario(scenario);
         scenarios.set(id, scenario);
@@ -150,14 +176,19 @@ export function createScenarioRecorder(options: {
       }
     },
     flush(): Promise<string | undefined> {
-      if (flushing) return flushing;
-      if (pendingIds.size)
+      if (flushing) {
+        return flushing;
+      }
+      if (pendingIds.size) {
         return Promise.reject(
           new Error('Await all recordScenario calls before flush()'),
         );
+      }
       sealed = true;
       flushing = (async () => {
-        if (!scenarios.size) return undefined;
+        if (!scenarios.size) {
+          return undefined;
+        }
         await atomicWrite(outputFile, {
           catalogVersion: 1,
           scenarios: [...scenarios.values()].sort(compareIds),

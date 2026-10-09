@@ -34,18 +34,21 @@ export async function mergeScenarios(
     }
     for (const scenario of entries) {
       const previous = scenarios.get(scenario.id);
-      if (previous)
+      if (previous) {
         throw new Error(
           `Duplicate scenario ID ${scenario.id} in ${filename} and ${previous.filename}`,
         );
+      }
       scenarios.set(scenario.id, { scenario, filename });
       const route = `${scenario.request.method} ${scenario.request.path}`;
       routes.set(route, [...(routes.get(route) ?? []), scenario.id]);
     }
   }
-  for (const [route, ids] of [...routes].sort())
-    if (ids.length > 1)
+  for (const [route, ids] of [...routes].sort()) {
+    if (ids.length > 1) {
       diagnostic(`Shared method/path ${route}: ${ids.sort().join(', ')}`);
+    }
+  }
   const filename = join(directory, 'catalog.json');
   await atomicWrite(filename, {
     catalogVersion: 1,

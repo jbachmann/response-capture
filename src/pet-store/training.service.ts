@@ -1,16 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { ApiProperty } from '@nestjs/swagger';
 import { DatabaseProvider } from './database.provider.js';
-import { InventoryDto } from './dto.js';
+import { SeedResultDto } from './training.dto.js';
 import { PetService } from './pet.service.js';
 import { seedOrders, seedPets } from './seed-data.js';
 import { StoreService } from './store.service.js';
-
-export class SeedResultDto {
-  @ApiProperty({ type: 'integer', example: 6 }) pets: number;
-  @ApiProperty({ type: 'integer', example: 3 }) orders: number;
-  @ApiProperty({ type: InventoryDto }) inventory: InventoryDto;
-}
 
 @Injectable()
 export class TrainingService {

@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   HttpCode,
-  Param,
   Post,
   Put,
   Query,
@@ -25,8 +24,8 @@ import {
   StatusQueryDto,
   TagsQueryDto,
   UpdatePetDto,
-} from './dto.js';
-import { IdPipe } from './id.pipe.js';
+} from './pet.dto.js';
+import { IdParam } from './id.pipe.js';
 import { PetService } from './pet.service.js';
 
 @ApiTags('pet')
@@ -57,7 +56,7 @@ export class PetController {
   })
   @ApiBody({ type: UpdatePetDto })
   @ApiOkResponse({ type: PetDto })
-  @ApiErrors(true)
+  @ApiErrors({ notFound: true })
   update(@Body() dto: UpdatePetDto) {
     return this.pets.update(dto);
   }
@@ -86,9 +85,9 @@ export class PetController {
     schema: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
   })
   @ApiOkResponse({ type: PetDto })
-  @ApiErrors(true)
-  findOne(@Param('petId', IdPipe) id: string) {
-    return this.pets.findOne(Number(id));
+  @ApiErrors({ notFound: true })
+  findOne(@IdParam('petId') id: number) {
+    return this.pets.findOne(id);
   }
 
   @Delete(':petId')
@@ -98,8 +97,8 @@ export class PetController {
     schema: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
   })
   @ApiNoContentResponse({ description: 'Pet deleted' })
-  @ApiErrors(true, true)
-  delete(@Param('petId', IdPipe) id: string) {
-    this.pets.delete(Number(id));
+  @ApiErrors({ notFound: true, conflict: true })
+  delete(@IdParam('petId') id: number) {
+    this.pets.delete(id);
   }
 }

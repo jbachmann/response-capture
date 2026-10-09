@@ -5,7 +5,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { SeedResultDto, TrainingService } from './training.service.js';
+import { SeedResultDto } from './training.dto.js';
+import { TrainingService } from './training.service.js';
 
 @ApiTags('training')
 @Controller('training')

@@ -1,8 +1,8 @@
 # API scenario recorder (test only)
 
 Import `createScenarioRecorder` from `./support/api-scenario-recorder/index.js`
-in integration tests. The implementation uses the installed NestJS 12 Express
-adapter, Supertest 7.3.1 and Vitest 4; production code has no recorder imports.
+in integration tests. The recorder builds Supertest requests and captures their asserted JSON
+responses. Production code has no recorder imports.
 
 ```ts
 const recorder = createScenarioRecorder({
@@ -35,8 +35,8 @@ afterAll(async () => {
 ```
 
 Create the recorder after the application is initialized. A recorder targets
-one server instance. The Petstore suite creates a recorder within each opted-in
-test because its application is recreated before every test. Persistence tests
+one server instance. The Petstore suites create a recorder within each opted-in
+test because their application is recreated before every test. Persistence tests
 create their recorder after reopening the server when recording persisted reads.
 Each test flushes only after all its assertions have succeeded, so a later test
 assertion failure leaves that test's collected scenarios unwritten.
@@ -128,19 +128,13 @@ Focused unit tests cover schema validation, recursive matching, merge errors,
 ordering and repeatability. NestJS integration tests cover JSON values,
 204/404 responses, rejected expectations and later callback assertions,
 unsupported content types, fixture snapshots, duplicate and concurrent
-recording, flush lifecycle and byte-identical output. The existing Petstore
-suite records 55 scenarios across 14 test cases: pet CRUD, order defaults and
+recording, flush lifecycle and byte-identical output. The Petstore feature
+suites record 55 scenarios across 14 test cases: pet CRUD, order defaults and
 CRUD, inventory, relationship conflicts, persistence, repeatable training seed
 and reset operations, and malformed or maximum safe IDs. It includes
 201/400/404/409 interactions, list arrays and 204 deletion. Query-dependent
 filter tests and non-JSON root/Swagger UI responses remain outside recording
 because version 1 does not model these interactions.
 
-Implementation verification: `npm test` passed 45 tests; `npm run test:e2e`
-passed 68 tests. TypeScript checking, the production build, lint and
-`git diff --check` passed. `npm run scenarios:merge` produced a catalog of 55
-unique Petstore scenarios and reported shared method/path combinations
-informationally. The expanded e2e suite also passed TypeScript checking, lint
-and `git diff --check`.
-Integration tests require permission to open localhost sockets in restricted
-execution environments.
+Integration tests open localhost sockets; restricted execution environments
+must allow this for end-to-end verification.

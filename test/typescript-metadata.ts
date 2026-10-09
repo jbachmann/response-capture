@@ -7,7 +7,9 @@ export function typescriptMetadata(): Plugin {
     name: 'typescript-decorator-metadata',
     enforce: 'pre',
     transform(code, id) {
-      if (!id.endsWith('.ts') || id.includes('/node_modules/')) return;
+      if (!id.endsWith('.ts') || id.includes('/node_modules/')) {
+        return;
+      }
       const result = ts.transpileModule(code, {
         fileName: id,
         compilerOptions: {

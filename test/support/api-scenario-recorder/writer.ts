@@ -5,16 +5,21 @@ import type { Json, Scenario } from './schema.js';
 
 export const compareIds = (a: Scenario, b: Scenario) =>
   a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+
 function canonical(value: Json): Json {
-  if (Array.isArray(value)) return value.map(canonical);
-  if (value !== null && typeof value === 'object')
+  if (Array.isArray(value)) {
+    return value.map(canonical);
+  }
+  if (value !== null && typeof value === 'object') {
     return Object.fromEntries(
       Object.keys(value)
         .sort()
         .map((key) => [key, canonical(value[key])]),
     );
+  }
   return value;
 }
+
 export async function atomicWrite(
   filename: string,
   value: unknown,

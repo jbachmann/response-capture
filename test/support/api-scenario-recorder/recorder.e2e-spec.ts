@@ -13,16 +13,22 @@ import type { Catalog, Json } from './index.js';
 
 @Controller()
 class FixtureController {
-  @Post('echo') echo(@Body() body: Json, @Res() response: ExpressResponse) {
+  @Post('echo')
+  echo(@Body() body: Json, @Res() response: ExpressResponse) {
     response.status(201).json(body);
   }
-  @Get('empty') empty(@Res() response: ExpressResponse) {
+
+  @Get('empty')
+  empty(@Res() response: ExpressResponse) {
     response.status(204).end();
   }
-  @Get('text') text() {
+
+  @Get('text')
+  text() {
     return 'unsupported';
   }
 }
+
 describe('scenario capture against NestJS/Express', () => {
   let app: INestApplication;
   let directory: string;
@@ -139,7 +145,9 @@ describe('scenario capture against NestJS/Express', () => {
       { x: undefined },
       NaN,
     ]) {
-      if (body === undefined) continue;
+      if (body === undefined) {
+        continue;
+      }
       await expect(
         capture.recordScenario(
           'bad',

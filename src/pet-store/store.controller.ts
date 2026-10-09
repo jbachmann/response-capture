@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Post } from '@nestjs/common';
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -17,8 +9,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ApiErrors } from './api-errors.js';
-import { CreateOrderDto, InventoryDto, OrderDto } from './dto.js';
-import { IdPipe } from './id.pipe.js';
+import { CreateOrderDto, InventoryDto, OrderDto } from './order.dto.js';
+import { IdParam } from './id.pipe.js';
 import { StoreService } from './store.service.js';
 
 @ApiTags('store')
@@ -39,7 +31,7 @@ export class StoreController {
   })
   @ApiBody({ type: CreateOrderDto })
   @ApiCreatedResponse({ type: OrderDto })
-  @ApiErrors(true, true)
+  @ApiErrors({ notFound: true, conflict: true })
   create(@Body() dto: CreateOrderDto) {
     return this.store.create(dto);
   }
@@ -50,9 +42,9 @@ export class StoreController {
     schema: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
   })
   @ApiOkResponse({ type: OrderDto })
-  @ApiErrors(true)
-  findOne(@Param('orderId', IdPipe) id: string) {
-    return this.store.findOne(Number(id));
+  @ApiErrors({ notFound: true })
+  findOne(@IdParam('orderId') id: number) {
+    return this.store.findOne(id);
   }
 
   @Delete('order/:orderId')
@@ -62,8 +54,8 @@ export class StoreController {
     schema: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
   })
   @ApiNoContentResponse({ description: 'Order deleted; pet status unchanged' })
-  @ApiErrors(true)
-  delete(@Param('orderId', IdPipe) id: string) {
-    this.store.delete(Number(id));
+  @ApiErrors({ notFound: true })
+  delete(@IdParam('orderId') id: number) {
+    this.store.delete(id);
   }
 }

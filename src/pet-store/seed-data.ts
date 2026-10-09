@@ -1,4 +1,5 @@
-import { CreatePetDto, OrderStatus, PetStatus } from './dto.js';
+import { CreatePetDto, PetStatus } from './pet.dto.js';
+import { OrderStatus } from './order.dto.js';
 
 // Fixed examples cover every pet and order status for classroom exercises.
 export const seedPets: CreatePetDto[] = [

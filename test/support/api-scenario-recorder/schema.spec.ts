@@ -83,13 +83,14 @@ describe('scenario schema', () => {
     expect(() =>
       validateCatalog({ catalogVersion: 1, scenarios: {} }, 'catalog.json'),
     ).toThrow(/scenarios/);
-    for (const bodyContains of [[], null, { a: 2 }])
+    for (const bodyContains of [[], null, { a: 2 }]) {
       expect(() =>
         validateScenario({
           ...sample(),
           request: { ...sample().request, match: { bodyContains } },
         }),
       ).toThrow(/bodyContains/);
+    }
     expect(() =>
       validateScenario({
         ...sample(),

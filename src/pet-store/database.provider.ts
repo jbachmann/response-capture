@@ -9,7 +9,9 @@ export class DatabaseProvider implements OnModuleDestroy {
 
   constructor() {
     const path = process.env.DATABASE_PATH ?? './data/petstore.sqlite';
-    if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
+    if (path !== ':memory:') {
+      mkdirSync(dirname(path), { recursive: true });
+    }
     this.db = new DatabaseSync(path);
     try {
       this.db.exec(`

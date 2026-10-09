@@ -1,4 +1,9 @@
-# Implementation Plan — NestJS API Scenario Recorder
+# Historical implementation plan — NestJS API scenario recorder
+
+This document records the original design proposal. For the current API,
+examples, limitations, and verification commands, see the
+[recorder usage guide](../test/support/api-scenario-recorder/README.md).
+The proposal below is retained for design context.
 
 ## 1. Objective
 

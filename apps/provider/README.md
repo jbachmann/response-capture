@@ -180,7 +180,18 @@ npm run test:e2e
 npm run scenarios:merge
 ```
 
-This generates gitignored suite files and `artifacts/api-scenarios/catalog.json`.
+Start the catalog API first in another terminal, from the repository root:
+`npm run dev --workspace=catalog` (or use the combined `npm run dev`).
+
+This generates gitignored suite files and `artifacts/api-scenarios/catalog.json`,
+then submits the catalog to `PUT /catalog-submissions`. The API URL defaults to
+`http://localhost:3001`; override it with `CATALOG_API_URL`. The submission uses
+system name `provider`, the full Git HEAD hash, and the current branch alias.
+`CATALOG_ALIAS` overrides the branch; an empty override or detached HEAD omits it.
+HTTP/network errors or the 30-second submission timeout fail the command while
+retaining the generated file. Correct the API connection and rerun the merge.
+Git metadata errors also fail the command. See the
+[catalog API](../catalog/README.md) for storage and lookup behavior.
 `GET /training/catalog` reads this file on each request and returns its JSON content.
 Use synthetic fixtures and keep all scenario assertions inside the recorder
 callback. Clear old recordings before a new run; the merger rejects duplicate

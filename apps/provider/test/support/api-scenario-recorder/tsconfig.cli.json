@@ -7,5 +7,5 @@
     "incremental": false,
     "declaration": false
   },
-  "include": ["merge.ts", "schema.ts", "writer.ts"]
+  "include": ["merge.ts", "schema.ts", "writer.ts", "submission.ts"]
 }

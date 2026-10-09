@@ -62,8 +62,10 @@ if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-  mergeScenarios(process.argv[2] ?? 'artifacts/api-scenarios')
-    .then((filename) => console.info(`Wrote ${filename}`))
+  import('./submission.js')
+    .then(({ mergeAndSubmitScenarios }) =>
+      mergeAndSubmitScenarios(process.argv[2] ?? 'artifacts/api-scenarios'),
+    )
     .catch((error) => {
       console.error(error instanceof Error ? error.message : String(error));
       process.exitCode = 1;

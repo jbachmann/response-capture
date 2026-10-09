@@ -87,6 +87,8 @@ the developer's responsibility.
 # Start a fresh recording session; old runs otherwise remain merge inputs.
 rm -rf artifacts/api-scenarios
 npm run test:e2e
+# Start the catalog API in another terminal from the repository root:
+# npm run dev --workspace=catalog
 npm run scenarios:merge
 # Optional directory override:
 npm run scenarios:merge -- /path/to/recordings
@@ -95,6 +97,16 @@ npm run scenarios:merge -- /path/to/recordings
 The merge command compiles just its test-support TypeScript into gitignored
 `.tmp/api-scenario-recorder` using the existing compiler. No extra runtime or
 package is needed. Generated recordings are gitignored too.
+
+The CLI also submits the generated catalog to `PUT /catalog-submissions` using
+`CATALOG_API_URL` (default `http://localhost:3001`). Start the catalog API before
+merging. Each submission includes system name `provider`, the full Git HEAD
+hash, and the current branch as alias. `CATALOG_ALIAS` overrides the branch;
+set it to an empty string to omit the alias. Detached HEAD omits the alias unless
+an override is supplied. An API error, network failure, or 30-second submission
+timeout fails the command and retains the local catalog for retry. Git metadata
+failures also fail the command. The exported `mergeScenarios` function continues
+to generate only the local file without networking.
 
 Each recorder instance has a filename containing a suite ID hash and a unique
 instance token. Parallel suites/workers, including ones with the same suite ID,

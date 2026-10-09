@@ -59,14 +59,19 @@
       "persistent": true,
       "passThroughEnv": [
         "PORT",
-        "DATABASE_PATH"
+        "DATABASE_PATH",
+        "CATALOG_DATABASE_PATH"
       ]
     },
     "test:e2e": {
       "cache": false
     },
     "scenarios:merge": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": [
+        "CATALOG_API_URL",
+        "CATALOG_ALIAS"
+      ]
     }
   },
   "globalPassThroughEnv": [

@@ -61,7 +61,19 @@ Build and unit-test tasks use local Turbo caching in `.turbo/`. Development,
 API end-to-end tests, and scenario merging are uncached. Before repeating a
 scenario recording run, clear `apps/provider/artifacts/api-scenarios` as described
 in the [recorder documentation](apps/provider/test/support/api-scenario-recorder/README.md).
-The merged catalog lives at `apps/provider/artifacts/api-scenarios/catalog.json`.
+Start the catalog API before merging (`npm run dev --workspace=catalog`, or the
+combined development command). The merged catalog lives at
+`apps/provider/artifacts/api-scenarios/catalog.json` and is also submitted to
+`PUT /catalog-submissions` at `http://localhost:3001`. Set `CATALOG_API_URL` to
+change the API base URL. Submissions use system name `provider`, the full current
+Git commit hash, and the current branch as alias. `CATALOG_ALIAS` overrides the
+alias; an empty override or detached HEAD omits it. Submission failures fail the
+command but retain the generated local file.
+
+The catalog API stores submissions in `apps/catalog/data/catalog.sqlite` by
+default; `CATALOG_DATABASE_PATH` overrides it independently of the provider's
+`DATABASE_PATH`. See the [catalog API documentation](apps/catalog/README.md) for
+lookup routes and persistence configuration.
 Generated output, runtime data, and recordings are ignored by Git and excluded
 from build and unit-test cache inputs. Remote caching is not configured.
 

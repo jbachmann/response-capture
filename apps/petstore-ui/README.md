@@ -1,4 +1,4 @@
-# Consumer
+# Petstore UI
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.26.
 
@@ -7,10 +7,10 @@ Install dependencies from the repository root with Node.js 24 and npm 11.8.0:
 ```sh
 nvm use
 npm ci
-npm run dev --workspace=@response-capture/consumer
+npm run dev --workspace=@response-capture/petstore-ui
 ```
 
-The commands below run from `apps/consumer` after that installation. Use
+The commands below run from `apps/petstore-ui` after that installation. Use
 `npm exec -- ng` in place of `ng` if Angular CLI is not on your PATH.
 See the [workspace README](../../README.md) for combined development and checks.
 
@@ -75,20 +75,20 @@ For more information on using the Angular CLI, including detailed command refere
 
 The root route redirects to `/pets`. Navigation links Pets and Orders. The
 Scenario library is hosted separately in [catalog-ui](../catalog-ui/README.md).
-The consumer and provider must both be running; the consumer uses the provider's
+The petstore-ui and petstore-api must both be running; the petstore-ui uses the petstore-api's
 real data, with no local mock fallback. The former `/scenarios` URL redirects to
 `/pets`.
 
 - Browse pets and inventory, search names, and filter by status and exact tag.
   Status changes apply immediately; use **Apply filters** or Enter to apply a tag.
-  Combined filters intersect the provider results; name search is local.
+  Combined filters intersect the petstore-api results; name search is local.
 - Add, edit, and delete pets. Name is required; photos, category, and tags are
   optional. Add photo URLs one per line. Editing preserves existing category/tag
   IDs and unchanged photo arrays; removing a tag or clearing a named category
   deliberately removes it. Only HTTP/HTTPS photos are displayed, with a fallback
   for missing or broken images.
 - Order available pets with a positive whole-number quantity and an optional
-  shipping date in local time. The consumer rechecks availability before ordering.
+  shipping date in local time. The petstore-ui rechecks availability before ordering.
   The API still permits ordering any status; this UI restriction is not a server
   guarantee. Order operations never change pet status.
 - **Orders** lists all saved orders, newest first, with links to order and pet
@@ -102,13 +102,13 @@ real data, with no local mock fallback. The former `/scenarios` URL redirects to
   exposed by the UI.
 
 The development proxy forwards `/pet`, `/pet/**`, `/store/**`, and `/training/**`
-to `http://localhost:3000`. In production, forward these API paths to the provider
-on the same origin and serve the Angular `index.html` for consumer paths including
+to `http://localhost:3000`. In production, forward these API paths to the petstore-api
+on the same origin and serve the Angular `index.html` for petstore-ui paths including
 `/pets`, `/pets/new`, `/pets/:id`, `/pets/:id/edit`, `/orders`, and `/orders/:id`.
 Never apply the Angular fallback to API paths.
 
-Run `npm test --workspace=@response-capture/consumer` and
-`npm run build --workspace=@response-capture/consumer` from the repository root.
+Run `npm test --workspace=@response-capture/petstore-ui` and
+`npm run build --workspace=@response-capture/petstore-ui` from the repository root.
 Petstore tests cover HTTP contracts, filter cancellation/intersection, edit
 preservation, order eligibility, validation, confirmations, failures, and axe
 WCAG A/AA DOM checks. Browser checks are also needed for contrast and layout.

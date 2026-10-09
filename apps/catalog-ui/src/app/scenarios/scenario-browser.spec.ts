@@ -1,7 +1,7 @@
 import axe from 'axe-core';
 import { Location } from '@angular/common';
 import { provideLocationMocks } from '@angular/common/testing';
-import referenceCatalog from '../../../../provider/docs/catalog.json';
+import referenceCatalog from '../../../../petstore-api/docs/catalog.json';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ChangeDetectionStrategy, Component } from '@angular/core';

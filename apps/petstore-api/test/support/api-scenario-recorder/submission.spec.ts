@@ -46,7 +46,7 @@ describe('merge submission', () => {
     expect(timeout).toHaveBeenCalledWith(30_000);
     timeout.mockRestore();
     expect(JSON.parse(options.body)).toEqual({
-      systemName: 'provider',
+      systemName: 'petstore-api',
       commitHash: 'a'.repeat(40),
       alias: 'main',
       catalog: JSON.parse(await readFile(filename, 'utf8')),

@@ -12,11 +12,11 @@ Install from the repository root:
 ```sh
 nvm use
 npm ci
-npm run dev --workspace=@response-capture/provider
+npm run dev --workspace=@response-capture/petstore-api
 ```
 
-After installation, the commands below can be run from `apps/provider`; from
-the root, append `--workspace=@response-capture/provider` to an npm command.
+After installation, the commands below can be run from `apps/petstore-api`; from
+the root, append `--workspace=@response-capture/petstore-api` to an npm command.
 See the [workspace README](../../README.md) for combined development and checks.
 
 The server listens on port `3000`; set `PORT` to override it. For a production
@@ -33,8 +33,8 @@ the same validation and documentation setup.
 ## Database configuration
 
 `DATABASE_PATH` defaults to `./data/petstore.sqlite`, relative to the process's
-working directory (`apps/provider` when launched through workspace scripts).
-The default file is therefore `apps/provider/data/petstore.sqlite` from the
+working directory (`apps/petstore-api` when launched through workspace scripts).
+The default file is therefore `apps/petstore-api/data/petstore.sqlite` from the
 repository root. Parent directories and the two tables (`pets`, `orders`)
 are created at startup, starting empty. Training endpoints can reset the data. Existing records survive restarts.
 
@@ -180,18 +180,18 @@ npm run scenarios:merge
 ```
 
 Start the catalog API first in another terminal, from the repository root:
-`npm run dev --workspace=catalog` (or use the combined `npm run dev`).
+`npm run dev --workspace=catalog-api` (or use the combined `npm run dev`).
 
 This generates gitignored suite files and `artifacts/api-scenarios/catalog.json`,
 then submits the catalog to `PUT /catalog-submissions`. The API URL defaults to
 `http://localhost:3001`; override it with `CATALOG_API_URL`. The submission uses
-system name `provider`, the full Git HEAD hash, and the current branch alias.
+system name `petstore-api`, the full Git HEAD hash, and the current branch alias.
 `CATALOG_ALIAS` overrides the branch; an empty override or detached HEAD omits it.
 HTTP/network errors or the 30-second submission timeout fail the command while
 retaining the generated file. Correct the API connection and rerun the merge.
 Git metadata errors also fail the command. See the
-[catalog API](../catalog/README.md) for storage and lookup behavior.
-The catalog-ui Scenario library browses submitted catalogs through the catalog API; the provider
+[catalog API](../catalog-api/README.md) for storage and lookup behavior.
+The catalog-ui Scenario library browses submitted catalogs through the catalog API; the petstore-api
 does not expose a catalog-reading endpoint.
 Use synthetic fixtures and keep all scenario assertions inside the recorder
 callback. Clear old recordings before a new run; the merger rejects duplicate

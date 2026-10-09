@@ -6,12 +6,12 @@ Install dependencies from the repository root with Node.js 24 and npm 11.8.0:
 ```sh
 nvm use
 npm ci
-npm run dev --workspace=catalog
+npm run dev --workspace=catalog-api
 npm run dev --workspace=catalog-ui
 ```
 
 Open http://localhost:4201/. The library lives at `/`; unknown UI paths redirect
-there. The consumer at http://localhost:4200/ provides the Petstore UI separately.
+there. The Petstore UI runs separately at http://localhost:4200/.
 See the [workspace README](../../README.md) for combined development commands.
 
 ## Scenario library
@@ -25,8 +25,8 @@ submission dates shown beside each commit. It never substitutes a local sample.
 
 Run catalog-ui and the catalog API locally. Angular's development proxy forwards
 `/catalog-inventory` and `/catalogs/**` to `http://localhost:3001`. Start the catalog
-API before generating and merging provider recordings; merging submits the catalog
-automatically. See the [catalog API documentation](../catalog/README.md).
+API before generating and merging petstore-api recordings; merging submits the catalog
+automatically. See the [catalog API documentation](../catalog-api/README.md).
 
 Categories, task groups, tags, and response-status choices come entirely from the
 loaded catalog. Optional `title`, `category`, `group`, `tags`, and `description`
@@ -50,7 +50,7 @@ For production, configure your static host to serve the Angular application for
 API on the same origin.
 The development proxy is not included in the production build.
 
-Component tests use arbitrary non-provider metadata and run axe WCAG A/AA checks
+Component tests use arbitrary metadata unrelated to the Petstore API and run axe WCAG A/AA checks
 against the test DOM. The DOM environment cannot evaluate browser layout or color
 contrast; check those in a real browser at desktop and mobile widths as well.
 

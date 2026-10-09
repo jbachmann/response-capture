@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "consumer": {
+    "petstore-ui": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -56,10 +56,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "consumer:build:production"
+              "buildTarget": "petstore-ui:build:production"
             },
             "development": {
-              "buildTarget": "consumer:build:development"
+              "buildTarget": "petstore-ui:build:development"
             }
           },
           "defaultConfiguration": "development",

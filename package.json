@@ -15,9 +15,9 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "dev": "turbo run dev",
-    "lint:provider": "npm run lint --workspace=@response-capture/provider",
-    "test:e2e": "turbo run test:e2e --filter=@response-capture/provider --filter=catalog",
-    "scenarios:merge": "turbo run scenarios:merge --filter=@response-capture/provider"
+    "lint:petstore-api": "npm run lint --workspace=@response-capture/petstore-api",
+    "test:e2e": "turbo run test:e2e --filter=@response-capture/petstore-api --filter=catalog-api",
+    "scenarios:merge": "turbo run scenarios:merge --filter=@response-capture/petstore-api"
   },
   "devDependencies": {
     "turbo": "^2.9.0"

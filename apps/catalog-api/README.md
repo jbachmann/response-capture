@@ -5,12 +5,12 @@ NestJS API for storing catalog submissions in SQLite. Requires Node.js 24.
 From the repository root, start the API before running `scenarios:merge`:
 
 ```sh
-npm run dev --workspace=catalog
+npm run dev --workspace=catalog-api
 ```
 
 The default port is `3001`; `PORT` overrides it. `CATALOG_DATABASE_PATH` defaults
 to `./data/catalog.sqlite`, relative to the app working directory (normally
-`apps/catalog`). Parent directories are created automatically. Use `:memory:`
+`apps/catalog-api`). Parent directories are created automatically. Use `:memory:`
 for ephemeral storage; use an explicit persistent path for production. Database
 files and journals are gitignored. No existing catalogs are imported automatically.
 
@@ -23,18 +23,18 @@ Use it to explore and try the endpoints. The OpenAPI document is available at
 ```sh
 curl -i -X PUT http://localhost:3001/catalog-submissions \
   -H 'Content-Type: application/json' \
-  -d '{"systemName":"provider","commitHash":"example-commit","alias":"main","catalog":{"catalogVersion":1,"scenarios":[]}}'
+  -d '{"systemName":"petstore-api","commitHash":"example-commit","alias":"main","catalog":{"catalogVersion":1,"scenarios":[]}}'
 
-curl http://localhost:3001/catalogs/provider
-curl http://localhost:3001/catalogs/provider/main
-curl http://localhost:3001/catalogs/provider/example-commit
+curl http://localhost:3001/catalogs/petstore-api
+curl http://localhost:3001/catalogs/petstore-api/main
+curl http://localhost:3001/catalogs/petstore-api/example-commit
 curl http://localhost:3001/catalog-submission
 curl http://localhost:3001/catalog-inventory
 ```
 
 `PUT /catalog-submissions` requires nonblank string `systemName` and `commitHash`,
 and a `catalog` JSON object. Any system name and catalog object are accepted;
-the API does not enforce the provider scenario schema. `alias` is an optional
+the API does not enforce the petstore-api scenario schema. `alias` is an optional
 string. There is no top-level `version` field. The JSON request limit is 10 MiB.
 Invalid submissions return `400`; oversized requests return `413`; successful
 submissions return `204` without a body.
@@ -56,7 +56,7 @@ Replaced submissions appear once with current metadata. An empty database return
 {
   "systems": [
     {
-      "name": "provider",
+      "name": "petstore-api",
       "catalogs": [
         {
           "commitHash": "example-commit",
@@ -85,11 +85,11 @@ matching submission exists.
 ## Checks and production
 
 ```sh
-npm test --workspace=catalog
-npm run test:e2e --workspace=catalog
-npm run lint --workspace=catalog
-npm run build --workspace=catalog
-npm run start:prod --workspace=catalog
+npm test --workspace=catalog-api
+npm run test:e2e --workspace=catalog-api
+npm run lint --workspace=catalog-api
+npm run build --workspace=catalog-api
+npm run start:prod --workspace=catalog-api
 ```
 
 End-to-end tests require localhost sockets. Tests use isolated temporary or

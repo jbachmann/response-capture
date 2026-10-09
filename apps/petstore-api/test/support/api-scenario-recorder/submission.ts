@@ -33,7 +33,7 @@ export async function mergeAndSubmitScenarios(
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        systemName: 'provider',
+        systemName: 'petstore-api',
         commitHash,
         ...(alias ? { alias } : {}),
         catalog,
@@ -50,6 +50,6 @@ export async function mergeAndSubmitScenarios(
       `Catalog submission to ${endpoint} failed: ${error instanceof Error ? error.message : String(error)}. Local catalog remains at ${filename}; check the catalog API and rerun scenarios:merge.`,
     );
   }
-  diagnostic(`Submitted provider catalog at commit ${commitHash}`);
+  diagnostic(`Submitted petstore-api catalog at commit ${commitHash}`);
   return filename;
 }

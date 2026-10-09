@@ -88,7 +88,7 @@ the developer's responsibility.
 rm -rf artifacts/api-scenarios
 npm run test:e2e
 # Start the catalog API in another terminal from the repository root:
-# npm run dev --workspace=catalog
+# npm run dev --workspace=catalog-api
 npm run scenarios:merge
 # Optional directory override:
 npm run scenarios:merge -- /path/to/recordings
@@ -100,7 +100,7 @@ package is needed. Generated recordings are gitignored too.
 
 The CLI also submits the generated catalog to `PUT /catalog-submissions` using
 `CATALOG_API_URL` (default `http://localhost:3001`). Start the catalog API before
-merging. Each submission includes system name `provider`, the full Git HEAD
+merging. Each submission includes system name `petstore-api`, the full Git HEAD
 hash, and the current branch as alias. `CATALOG_ALIAS` overrides the branch;
 set it to an empty string to omit the alias. Detached HEAD omits the alias unless
 an override is supplied. An API error, network failure, or 30-second submission

@@ -1,6 +1,6 @@
 # Response Capture
 
-An npm workspace containing a NestJS API and an Angular UI. Turborepo runs
+An npm workspace containing two NestJS APIs and an Angular UI. Turborepo runs
 tasks through the existing Nest and Angular CLIs and caches builds and unit tests.
 
 ## Setup
@@ -14,7 +14,7 @@ npm ci
 
 The root `package-lock.json` is the only lockfile. Install application dependencies
 with `npm install <package> --workspace=@response-capture/provider` or
-`--workspace=@response-capture/consumer`. Frameworks and compilers remain declared
+`--workspace=@response-capture/consumer` or `--workspace=catalog`. Frameworks and compilers remain declared
 in their application packages; the API uses TypeScript 6 and the UI TypeScript 5.9.
 
 ## Development
@@ -23,15 +23,17 @@ in their application packages; the API uses TypeScript 6 and the UI TypeScript 5
 npm run dev
 ```
 
-This starts the API at http://localhost:3000 and the UI at http://localhost:4200.
+This starts the provider API at http://localhost:3000, the catalog API at
+http://localhost:3001, and the UI at http://localhost:4200.
 Swagger UI is at http://localhost:3000/docs and OpenAPI JSON at
-http://localhost:3000/docs-json. Stop both servers with Ctrl+C.
+http://localhost:3000/docs-json. Stop all servers with Ctrl+C.
 
-Run either application independently:
+Run an application independently:
 
 ```sh
 npm run dev --workspace=@response-capture/provider
 npm run dev --workspace=@response-capture/consumer
+npm run dev --workspace=catalog
 ```
 
 Workspace scripts run from their application directory. The API's default SQLite
@@ -50,7 +52,7 @@ npm run test:e2e
 npm run scenarios:merge
 ```
 
-Builds produce `apps/provider/dist` and `apps/consumer/dist/consumer`.
+Builds produce `apps/provider/dist`, `apps/catalog/dist`, and `apps/consumer/dist/consumer`.
 Start the built API with `npm run start:prod --workspace=@response-capture/provider`.
 Serve the UI's `dist/consumer/browser` directory using your chosen static host.
 Deployment commands remain application-local.
@@ -70,6 +72,7 @@ For machines with limited resources, use `NG_BUILD_MAX_WORKERS=2 npm run build`
 
 - [apps/provider](apps/provider/README.md): API, SQLite persistence, and scenario recorder.
 - [apps/consumer](apps/consumer/README.md): Angular UI and its local development instructions.
+- [apps/catalog](apps/catalog/README.md): NestJS catalog API.
 - `packages/*`: reserved workspace pattern for future shared libraries; no shared package exists yet.
 
 Future shared contracts should expose browser-safe types rather than decorated

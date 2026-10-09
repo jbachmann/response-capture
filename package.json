@@ -16,7 +16,7 @@
     "test": "turbo run test",
     "dev": "turbo run dev",
     "lint:provider": "npm run lint --workspace=@response-capture/provider",
-    "test:e2e": "turbo run test:e2e --filter=@response-capture/provider",
+    "test:e2e": "turbo run test:e2e --filter=@response-capture/provider --filter=catalog",
     "scenarios:merge": "turbo run scenarios:merge --filter=@response-capture/provider"
   },
   "devDependencies": {

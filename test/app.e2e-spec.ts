@@ -8,6 +8,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { setupApp } from '../src/setup-app.js';
 import { DatabaseProvider } from '../src/pet-store/database.provider.js';
+import { createScenarioRecorder } from './support/api-scenario-recorder/index.js';
 import { TrainingService } from '../src/pet-store/training.service.js';
 
 describe('SQLite Petstore (e2e)', () => {
@@ -35,6 +36,53 @@ describe('SQLite Petstore (e2e)', () => {
     if (previousPath === undefined) delete process.env.DATABASE_PATH;
     else process.env.DATABASE_PATH = previousPath;
     rmSync(directory, { recursive: true, force: true });
+  });
+
+  it('records asserted Petstore success and error examples', async () => {
+    const recorder = createScenarioRecorder({
+      app: app.getHttpServer(),
+      suiteId: 'petstore-examples',
+      outputDirectory: 'artifacts/api-scenarios',
+    });
+    await recorder.recordScenario(
+      'pet.create.success',
+      { method: 'POST', path: '/pet', body: pet },
+      (test) =>
+        test
+          .expect(201)
+          .expect({ ...pet, id: 1, tags: [], status: 'available' }),
+      {
+        description: 'Creates a pet from a synthetic fixture',
+        requestMatch: { bodyContains: { name: 'Milo' } },
+      },
+    );
+    await recorder.recordScenario(
+      'pet.create.invalid',
+      { method: 'POST', path: '/pet', body: {} },
+      (test) => test.expect(400),
+    );
+    await recorder.recordScenario(
+      'pet.read.missing',
+      { method: 'GET', path: '/pet/999' },
+      (test) => test.expect(404),
+    );
+    await recorder.recordScenario(
+      'pet.list.success',
+      { method: 'GET', path: '/pet' },
+      async (test) => {
+        const response = await test.expect(200);
+        expect(response.body).toEqual([
+          { ...pet, id: 1, tags: [], status: 'available' },
+        ]);
+        return response;
+      },
+    );
+    await recorder.recordScenario(
+      'pet.delete.success',
+      { method: 'DELETE', path: '/pet/1' },
+      (test) => test.expect(204),
+    );
+    await recorder.flush();
   });
 
   it('preserves root and starts empty', async () => {

@@ -154,3 +154,21 @@ UI and request/response schemas.
 
 This API includes no user accounts, authentication, uploads, bulk operations,
 XML, pagination, payments, or deployment changes.
+
+## Recording API scenarios
+
+Integration tests can explicitly record asserted JSON interactions using the
+[test-only API scenario recorder](test/support/api-scenario-recorder/README.md).
+The Petstore end-to-end suite includes runnable examples for success,
+validation errors, missing resources, lists and empty responses.
+
+```sh
+rm -rf artifacts/api-scenarios
+npm run test:e2e
+npm run scenarios:merge
+```
+
+This generates gitignored suite files and `artifacts/api-scenarios/catalog.json`.
+Use synthetic fixtures and keep all scenario assertions inside the recorder
+callback. Clear old recordings before a new run; the merger rejects duplicate
+IDs across runs as well as across suites.

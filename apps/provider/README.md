@@ -65,6 +65,7 @@ application errors. Database operations are synchronous.
 | POST | `/store/order` | Create an order for an existing pet (201) |
 | GET | `/store/order/:orderId` | Read an order (200) |
 | DELETE | `/store/order/:orderId` | Delete an order (204) |
+| GET | `/training/catalog` | Return the generated API scenario catalog (200; 404 if missing) |
 | POST | `/training/seed` | Clear and repopulate static training data (200) |
 | DELETE | `/training/database` | Clear all pets and orders (204) |
 
@@ -179,6 +180,14 @@ npm run scenarios:merge
 ```
 
 This generates gitignored suite files and `artifacts/api-scenarios/catalog.json`.
+`GET /training/catalog` reads this file on each request and returns its JSON content.
 Use synthetic fixtures and keep all scenario assertions inside the recorder
 callback. Clear old recordings before a new run; the merger rejects duplicate
 IDs across runs as well as across suites.
+
+The scenario recordings include optional authored titles, categories, task groups,
+open-ended tags, and descriptions for dynamic browsing in the consumer. The
+reference [catalog](docs/catalog.json) contains 55 annotated examples. Regenerate
+it from a fresh recording/merge run; do not hand-edit generated request/response
+data. See the [recorder metadata guide](test/support/api-scenario-recorder/README.md#browsing-metadata)
+for authoring and version 1 compatibility details.

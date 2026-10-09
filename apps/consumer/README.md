@@ -70,3 +70,29 @@ No UI end-to-end runner is configured in this repository yet.
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+## Scenario library
+
+The root route redirects to `/scenarios`. The browser fetches `/training/catalog`
+on entry and when **Refresh catalog** is selected. It never substitutes a local
+sample file. Run both applications locally; Angular's development proxy forwards
+`/training/**` to `http://localhost:3000`.
+
+Categories, task groups, tags, and response-status choices come entirely from the
+loaded catalog. Optional `title`, `category`, `group`, `tags`, and `description`
+fields provide readable browsing metadata. Legacy entries use their stable ID as
+the title and appear under **Uncategorized** when category is absent. Missing
+metadata does not create filter choices. Request and response JSON remain exact
+recorded examples, including `null` bodies.
+
+Search, filters, and selected scenario are stored in URL query parameters (`q`,
+`category`, `group`, `tag`, `status`, `scenario`). Removed values are cleared when
+the catalog reloads. Browsing does not execute any scenario requests.
+
+For production, configure your static host to serve the Angular application for
+`/scenarios` and forward `/training/catalog` to the provider on the same origin.
+The development proxy is not included in the production build.
+
+Component tests use arbitrary non-provider metadata and run axe WCAG A/AA checks
+against the test DOM. The DOM environment cannot evaluate browser layout or color
+contrast; check those in a real browser at desktop and mobile widths as well.

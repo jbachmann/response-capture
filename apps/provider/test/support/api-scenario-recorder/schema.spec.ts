@@ -7,6 +7,18 @@ const sample = () => ({
   response: { status: 201, body: null },
 });
 describe('scenario schema', () => {
+  it('accepts legacy records and unrestricted browsing metadata', () => {
+    expect(() => validateScenario(sample())).not.toThrow();
+    expect(() =>
+      validateScenario({
+        ...sample(),
+        title: 'Dispatch a parcel',
+        category: 'Logistics',
+        group: 'Dispatch',
+        tags: ['new-tag', 'express'],
+      }),
+    ).not.toThrow();
+  });
   it('matches recursive subsets with full ordered array equality', () => {
     expect(bodyContains({ a: { b: 1, c: 2 } }, { a: { b: 1 } })).toBe(true);
     expect(bodyContains([{ a: 1, b: 2 }], [{ a: 1 }])).toBe(false);
@@ -22,6 +34,13 @@ describe('scenario schema', () => {
     ['schemaVersion', 2],
     ['id', ''],
     ['description', 42],
+    ['title', ' '],
+    ['category', 42],
+    ['group', null],
+    ['tags', 'tag'],
+    ['tags', ['']],
+    ['tags', ['same', 'same']],
+    ['tags', [42]],
     ['request', { method: 'get', path: '/pet', body: null }],
     ['request', { method: 'TRACE', path: '/pet', body: null }],
     ...[

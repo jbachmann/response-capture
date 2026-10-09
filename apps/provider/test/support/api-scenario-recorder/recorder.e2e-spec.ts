@@ -58,6 +58,30 @@ describe('scenario capture against NestJS/Express', () => {
   const catalog = async (filename: string) =>
     JSON.parse(await readFile(filename, 'utf8')) as Catalog;
 
+  it('snapshots browsing metadata and preserves it through capture and merge', async () => {
+    const capture = recorder();
+    const metadata = {
+      title: 'Echo an example',
+      category: 'Examples',
+      group: 'Echo',
+      tags: ['nested'],
+      description: 'Returns the submitted object.',
+    };
+    const recording = capture.recordScenario(
+      'echo.metadata',
+      { method: 'POST', path: '/echo', body: { a: 1 } },
+      (test) => test.expect(201),
+      metadata,
+    );
+    metadata.tags.push('later');
+    await recording;
+    await capture.flush();
+    const merged = await catalog(await mergeScenarios(directory));
+    expect(merged.scenarios[0]).toMatchObject({
+      ...metadata,
+      tags: ['nested'],
+    });
+  });
   it('captures actual JSON objects, arrays, primitives and explicit null', async () => {
     const capture = recorder();
     const bodies: Json[] = [

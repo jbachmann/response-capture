@@ -17,6 +17,22 @@ describe('catalog merging', () => {
   afterEach(async () => {
     await rm(directory, { force: true, recursive: true });
   });
+  it('preserves authored metadata alongside legacy records', async () => {
+    const enriched = {
+      ...scenario('enriched'),
+      title: 'Open a station',
+      description: 'Starts observing.',
+      category: 'Astronomy',
+      group: 'Open',
+      tags: ['night'],
+    };
+    await atomicWrite(join(directory, 'a.json'), enriched);
+    await atomicWrite(join(directory, 'b.json'), scenario('legacy'));
+    const catalog = JSON.parse(
+      await readFile(await mergeScenarios(directory, () => undefined), 'utf8'),
+    );
+    expect(catalog.scenarios).toEqual([enriched, scenario('legacy')]);
+  });
   it('sorts scenarios, reports shared routes, ignores old catalogs/temp files, and is deterministic', async () => {
     await atomicWrite(join(directory, 'b.json'), {
       catalogVersion: 1,

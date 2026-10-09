@@ -1,0 +1,112 @@
+:host {
+  display: block;
+}
+.category {
+  margin-bottom: 1.75rem;
+}
+.category h2 {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  font-size: 1.15rem;
+  font-weight: 650;
+  margin-bottom: 1rem;
+}
+.count {
+  font-size: 0.72rem;
+  background: #e7ece7;
+  color: #4d5c53;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+}
+.category h3 {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 550;
+  margin: 1.1rem 0 0.55rem;
+  display: flex;
+  gap: 0.5rem;
+}
+.scenario-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  list-style: none;
+}
+.scenario {
+  width: 100%;
+  text-align: left;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.scenario:hover {
+  border-color: #7d9b8e;
+  background: #fbfdfb;
+}
+.scenario.selected {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 var(--accent);
+  background: #f6faf7;
+}
+.scenario-heading {
+  display: flex;
+  align-items: start;
+  gap: 0.65rem;
+  justify-content: space-between;
+}
+.scenario-heading strong {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.status-badge {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  line-height: 1.5;
+  border: 1px solid #d6dfd8;
+  background: #f2f5f2;
+  color: #405149;
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+}
+.scenario-description {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.scenario-endpoint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
+.scenario-endpoint code {
+  overflow-wrap: anywhere;
+}
+.method {
+  font-weight: 650;
+  color: var(--accent);
+}
+.open-label {
+  margin-left: auto;
+  color: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .scenario-heading {
+    flex-direction: column;
+  }
+}

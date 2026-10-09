@@ -8,4 +8,5 @@ export type {
   Method,
   RequestExample,
   Scenario,
+  ScenarioMetadata,
 } from './schema.js';

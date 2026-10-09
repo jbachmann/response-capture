@@ -17,10 +17,17 @@ export interface RequestExample {
   match?: { bodyContains: { [key: string]: Json } };
 }
 
-export interface Scenario {
+export interface ScenarioMetadata {
+  title?: string;
+  category?: string;
+  group?: string;
+  tags?: string[];
+  description?: string;
+}
+
+export interface Scenario extends ScenarioMetadata {
   schemaVersion: 1;
   id: string;
-  description?: string;
   request: RequestExample;
   response: {
     status: number;
@@ -200,7 +207,17 @@ export function validateScenario(
   const context = `${source} [${typeof scenario.id === 'string' && scenario.id.trim() ? scenario.id : 'unknown ID'}]`;
   keys(
     scenario,
-    ['schemaVersion', 'id', 'description', 'request', 'response'],
+    [
+      'schemaVersion',
+      'id',
+      'title',
+      'category',
+      'group',
+      'tags',
+      'description',
+      'request',
+      'response',
+    ],
     context,
     'scenario',
   );
@@ -209,6 +226,26 @@ export function validateScenario(
   }
   if (typeof scenario.id !== 'string' || !scenario.id.trim()) {
     fail(context, 'id', 'must be a nonempty stable string');
+  }
+  for (const field of ['title', 'category', 'group']) {
+    if (
+      scenario[field] !== undefined &&
+      (typeof scenario[field] !== 'string' ||
+        !(scenario[field] as string).trim())
+    ) {
+      fail(context, field, 'must be a nonblank string');
+    }
+  }
+  if (scenario.tags !== undefined) {
+    if (
+      !Array.isArray(scenario.tags) ||
+      [...scenario.tags].some(
+        (tag: unknown) => typeof tag !== 'string' || !tag.trim(),
+      ) ||
+      new Set(scenario.tags).size !== scenario.tags.length
+    ) {
+      fail(context, 'tags', 'must be unique nonblank strings');
+    }
   }
   if (
     scenario.description !== undefined &&

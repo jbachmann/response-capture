@@ -16,11 +16,25 @@ describe('API contract (e2e)', () => {
           `${resource}.read.invalid-id.${id}`,
           { method: 'GET', path },
           (test) => test.expect(400),
+          {
+            title: `Reject reading a ${resource === 'pet' ? 'pet' : 'order'} with ID ${id}`,
+            category: resource === 'pet' ? 'Pets' : 'Orders',
+            group: resource === 'pet' ? 'Read a pet' : 'Read an order',
+            description: `ID ${id} is not a positive safe integer in the accepted format; the request is rejected.`,
+            tags: ['boundary-values'],
+          },
         );
         await recorder.recordScenario(
           `${resource}.delete.invalid-id.${id}`,
           { method: 'DELETE', path },
           (test) => test.expect(400),
+          {
+            title: `Reject deleting a ${resource === 'pet' ? 'pet' : 'order'} with ID ${id}`,
+            category: resource === 'pet' ? 'Pets' : 'Orders',
+            group: resource === 'pet' ? 'Delete a pet' : 'Delete an order',
+            description: `ID ${id} is not a positive safe integer in the accepted format; the request is rejected.`,
+            tags: ['boundary-values'],
+          },
         );
       }
       await recorder.flush();
@@ -33,11 +47,27 @@ describe('API contract (e2e)', () => {
       'pet.read.maximum-safe-id',
       { method: 'GET', path: '/pet/9007199254740991' },
       (test) => test.expect(404),
+      {
+        title: 'Read a missing pet at the maximum safe ID',
+        category: 'Pets',
+        group: 'Read a pet',
+        description:
+          'The largest safe integer is a valid ID, but no pet with that ID exists.',
+        tags: ['boundary-values'],
+      },
     );
     await recorder.recordScenario(
       'store.order.read.maximum-safe-id',
       { method: 'GET', path: '/store/order/9007199254740991' },
       (test) => test.expect(404),
+      {
+        title: 'Read a missing order at the maximum safe ID',
+        category: 'Orders',
+        group: 'Read an order',
+        description:
+          'The largest safe integer is a valid ID, but no order with that ID exists.',
+        tags: ['boundary-values'],
+      },
     );
     await recorder.flush();
   });

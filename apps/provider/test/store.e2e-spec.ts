@@ -10,6 +10,14 @@ describe('store behavior (e2e)', () => {
       'store.order.create.missing-pet',
       { method: 'POST', path: '/store/order', body: { petId: 99 } },
       (test) => test.expect(404),
+      {
+        title: 'Reject an order for a missing pet',
+        category: 'Orders',
+        group: 'Create an order',
+        description:
+          'No pet with ID 99 exists, so the order cannot be created.',
+        tags: ['relationships'],
+      },
     );
     await api().post('/pet').send(pet).expect(201);
     const order = (
@@ -27,17 +35,41 @@ describe('store behavior (e2e)', () => {
           });
           return response;
         },
+        {
+          title: 'Create an order with defaults',
+          category: 'Orders',
+          group: 'Create an order',
+          description:
+            'After creating pet 1, an order defaults to quantity 1, placed status, and incomplete.',
+          tags: ['defaults', 'relationships'],
+        },
       )
     ).body;
     await recorder.recordScenario(
       'store.order.read.success',
       { method: 'GET', path: '/store/order/1' },
       (test) => test.expect(200).expect(order),
+      {
+        title: 'Read an existing order',
+        category: 'Orders',
+        group: 'Read an order',
+        description:
+          'Returns the previously created order and its default values.',
+        tags: [],
+      },
     );
     await recorder.recordScenario(
       'pet.delete.referenced-by-order',
       { method: 'DELETE', path: '/pet/1' },
       (test) => test.expect(409),
+      {
+        title: 'Cannot delete a pet linked to an order',
+        category: 'Pets',
+        group: 'Delete a pet',
+        description:
+          'An existing order references pet 1, so deletion is rejected with a conflict.',
+        tags: ['relationships'],
+      },
     );
     await api()
       .get('/pet/1')
@@ -47,6 +79,14 @@ describe('store behavior (e2e)', () => {
       'store.inventory.with-order',
       { method: 'GET', path: '/store/inventory' },
       (test) => test.expect(200).expect({ available: 1, pending: 0, sold: 0 }),
+      {
+        title: 'Read inventory after creating an order',
+        category: 'Inventory',
+        group: 'Read inventory',
+        description:
+          'Creating an order leaves its pet status unchanged, so inventory still counts one available pet.',
+        tags: ['relationships'],
+      },
     );
     await recorder.recordScenario(
       'store.order.delete.success',
@@ -56,16 +96,40 @@ describe('store behavior (e2e)', () => {
         expect(response.text).toBe('');
         return response;
       },
+      {
+        title: 'Delete an existing order',
+        category: 'Orders',
+        group: 'Delete an order',
+        description:
+          'Deletes order 1 while preserving its pet and returns no response body.',
+        tags: ['relationships'],
+      },
     );
     await recorder.recordScenario(
       'store.order.read.missing',
       { method: 'GET', path: '/store/order/1' },
       (test) => test.expect(404),
+      {
+        title: 'Read a deleted order',
+        category: 'Orders',
+        group: 'Read an order',
+        description:
+          'After deleting order 1, reading it reports that it no longer exists.',
+        tags: [],
+      },
     );
     await recorder.recordScenario(
       'store.order.delete.missing',
       { method: 'DELETE', path: '/store/order/1' },
       (test) => test.expect(404),
+      {
+        title: 'Delete an order that does not exist',
+        category: 'Orders',
+        group: 'Delete an order',
+        description:
+          'The order has already been deleted, so a second deletion reports it as missing.',
+        tags: [],
+      },
     );
     await recorder.recordScenario(
       'pet.read.after-order-deletion',
@@ -74,6 +138,13 @@ describe('store behavior (e2e)', () => {
         const response = await test.expect(200);
         expect(response.body.status).toBe('available');
         return response;
+      },
+      {
+        title: 'Read a pet after deleting its order',
+        category: 'Pets',
+        group: 'Read a pet',
+        description: 'Deleting an order leaves its pet available and readable.',
+        tags: ['relationships'],
       },
     );
     await api().delete('/pet/1').expect(204);
@@ -110,11 +181,27 @@ describe('store behavior (e2e)', () => {
       'pet.read.persisted',
       { method: 'GET', path: `/pet/${savedPet.id}` },
       (test) => test.expect(200).expect(savedPet),
+      {
+        title: 'Read a pet after reopening the database',
+        category: 'Pets',
+        group: 'Read a pet',
+        description:
+          'A saved pet retains its nested category, tags, and status after the application reopens the database.',
+        tags: ['persistence'],
+      },
     );
     await recorder.recordScenario(
       'store.order.read.persisted',
       { method: 'GET', path: `/store/order/${savedOrder.id}` },
       (test) => test.expect(200).expect(savedOrder),
+      {
+        title: 'Read an order after reopening the database',
+        category: 'Orders',
+        group: 'Read an order',
+        description:
+          'The saved quantity, shipping date, status, and completion flag survive reopening the database.',
+        tags: ['persistence'],
+      },
     );
     await api().delete(`/pet/${savedPet.id}`).expect(409);
     const next = (await api().post('/pet').send(pet).expect(201)).body;

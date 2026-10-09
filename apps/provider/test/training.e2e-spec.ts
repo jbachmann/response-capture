@@ -19,6 +19,14 @@ describe('training behavior (e2e)', () => {
       'training.seed.replaces-existing',
       { method: 'POST', path: '/training/seed' },
       (test) => test.expect(200).expect(summary),
+      {
+        title: 'Replace existing data with training examples',
+        category: 'Training',
+        group: 'Seed the database',
+        description:
+          'Existing pets and orders are replaced with six pets and three orders, with IDs starting at 1.',
+        tags: ['defaults'],
+      },
     );
     const pets = (await api().get('/pet').expect(200)).body;
     expect(pets.map((p: { name: string }) => p.name)).toEqual([
@@ -55,6 +63,14 @@ describe('training behavior (e2e)', () => {
       'training.seed.repeatable',
       { method: 'POST', path: '/training/seed' },
       (test) => test.expect(200).expect(summary),
+      {
+        title: 'Repeat the training seed',
+        category: 'Training',
+        group: 'Seed the database',
+        description:
+          'After modifying and adding data, seeding again restores the same six pets and three orders.',
+        tags: ['repeatability'],
+      },
     );
     await api().get('/pet').expect(200).expect(pets);
     for (const order of orders) {
@@ -79,11 +95,27 @@ describe('training behavior (e2e)', () => {
         expect(response.text).toBe('');
         return response;
       },
+      {
+        title: 'Clear the training database',
+        category: 'Training',
+        group: 'Clear the database',
+        description:
+          'After seeding, deletes all orders and pets and resets their ID sequences.',
+        tags: [],
+      },
     );
     await recorder.recordScenario(
       'training.database.clear-already-empty',
       { method: 'DELETE', path: '/training/database' },
       (test) => test.expect(204),
+      {
+        title: 'Clear an already empty database',
+        category: 'Training',
+        group: 'Clear the database',
+        description:
+          'Clearing a second time succeeds without requiring any existing records.',
+        tags: ['repeatability', 'empty-results'],
+      },
     );
     await fixture.reopen();
     await api().get('/pet').expect(200).expect([]);

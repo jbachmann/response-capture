@@ -1,0 +1,1540 @@
+{
+  "catalogVersion": 1,
+  "scenarios": [
+    {
+      "category": "Pets",
+      "description": "An empty request is rejected because a name and photo URLs are required.",
+      "group": "Create a pet",
+      "id": "pet.create.invalid",
+      "request": {
+        "body": {},
+        "method": "POST",
+        "path": "/pet"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": [
+            "name must match /\\S/ regular expression",
+            "name must be a string",
+            "each value in photoUrls must be a string",
+            "photoUrls must be an array"
+          ],
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Reject a pet with missing fields"
+    },
+    {
+      "category": "Pets",
+      "description": "Creates Milo with no category or tags and the default available status.",
+      "group": "Create a pet",
+      "id": "pet.create.success",
+      "request": {
+        "body": {
+          "name": "Milo",
+          "photoUrls": [
+            "https://example.com/milo.jpg"
+          ]
+        },
+        "match": {
+          "bodyContains": {
+            "name": "Milo"
+          }
+        },
+        "method": "POST",
+        "path": "/pet"
+      },
+      "response": {
+        "body": {
+          "id": 1,
+          "name": "Milo",
+          "photoUrls": [
+            "https://example.com/milo.jpg"
+          ],
+          "status": "available",
+          "tags": []
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 201
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "defaults"
+      ],
+      "title": "Create a pet with defaults"
+    },
+    {
+      "category": "Pets",
+      "description": "Creates a sold pet with an explicit category and tag.",
+      "group": "Create a pet",
+      "id": "pet.create.with-category-and-tags",
+      "request": {
+        "body": {
+          "category": {
+            "id": 1,
+            "name": "Cat"
+          },
+          "name": "Milo",
+          "photoUrls": [
+            "https://example.com/milo.jpg"
+          ],
+          "status": "sold",
+          "tags": [
+            {
+              "id": 2,
+              "name": "cute"
+            }
+          ]
+        },
+        "method": "POST",
+        "path": "/pet"
+      },
+      "response": {
+        "body": {
+          "category": {
+            "id": 1,
+            "name": "Cat"
+          },
+          "id": 1,
+          "name": "Milo",
+          "photoUrls": [
+            "https://example.com/milo.jpg"
+          ],
+          "status": "sold",
+          "tags": [
+            {
+              "id": 2,
+              "name": "cute"
+            }
+          ]
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 201
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Create a pet with category and tags"
+    },
+    {
+      "category": "Pets",
+      "description": "After replacing the pet, deletion succeeds and returns no response body.",
+      "group": "Delete a pet",
+      "id": "pet.delete.after-replacement",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/pet/1"
+      },
+      "response": {
+        "body": null,
+        "status": 204
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Delete a replaced pet"
+    },
+    {
+      "category": "Pets",
+      "description": "ID -1 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Delete a pet",
+      "id": "pet.delete.invalid-id.-1",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/pet/-1"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject deleting a pet with ID -1"
+    },
+    {
+      "category": "Pets",
+      "description": "ID 0 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Delete a pet",
+      "id": "pet.delete.invalid-id.0",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/pet/0"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject deleting a pet with ID 0"
+    },
+    {
+      "category": "Pets",
+      "description": "ID 1.5 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Delete a pet",
+      "id": "pet.delete.invalid-id.1.5",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/pet/1.5"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject deleting a pet with ID 1.5"
+    },
+    {
+      "category": "Pets",
+      "description": "ID 1e2 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Delete a pet",
+      "id": "pet.delete.invalid-id.1e2",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/pet/1e2"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject deleting a pet with ID 1e2"
+    },
+    {
+      "category": "Pets",
+      "description": "ID 9007199254740992 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Delete a pet",
+      "id": "pet.delete.invalid-id.9007199254740992",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/pet/9007199254740992"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject deleting a pet with ID 9007199254740992"
+    },
+    {
+      "category": "Pets",
+      "description": "ID abc is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Delete a pet",
+      "id": "pet.delete.invalid-id.abc",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/pet/abc"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject deleting a pet with ID abc"
+    },
+    {
+      "category": "Pets",
+      "description": "The pet has already been deleted, so a second deletion reports it as missing.",
+      "group": "Delete a pet",
+      "id": "pet.delete.missing",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/pet/1"
+      },
+      "response": {
+        "body": {
+          "error": "Not Found",
+          "message": "Pet not found",
+          "statusCode": 404
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 404
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Delete a pet that does not exist"
+    },
+    {
+      "category": "Pets",
+      "description": "An existing order references pet 1, so deletion is rejected with a conflict.",
+      "group": "Delete a pet",
+      "id": "pet.delete.referenced-by-order",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/pet/1"
+      },
+      "response": {
+        "body": {
+          "error": "Conflict",
+          "message": "Pet is referenced by an order",
+          "statusCode": 409
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 409
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "relationships"
+      ],
+      "title": "Cannot delete a pet linked to an order"
+    },
+    {
+      "category": "Pets",
+      "description": "Deletes a pet with no referencing orders and returns no response body.",
+      "group": "Delete a pet",
+      "id": "pet.delete.success",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/pet/1"
+      },
+      "response": {
+        "body": null,
+        "status": 204
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Delete an existing pet"
+    },
+    {
+      "category": "Pets",
+      "description": "A fresh database returns an empty list.",
+      "group": "List pets",
+      "id": "pet.list.empty",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet"
+      },
+      "response": {
+        "body": [],
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 200
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "empty-results"
+      ],
+      "title": "List pets in an empty database"
+    },
+    {
+      "category": "Pets",
+      "description": "After creating Milo, the list contains that pet.",
+      "group": "List pets",
+      "id": "pet.list.success",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet"
+      },
+      "response": {
+        "body": [
+          {
+            "id": 1,
+            "name": "Milo",
+            "photoUrls": [
+              "https://example.com/milo.jpg"
+            ],
+            "status": "available",
+            "tags": []
+          }
+        ],
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 200
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "List existing pets"
+    },
+    {
+      "category": "Pets",
+      "description": "After deleting pet 1, reading it reports that it no longer exists.",
+      "group": "Read a pet",
+      "id": "pet.read.after-deletion",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet/1"
+      },
+      "response": {
+        "body": {
+          "error": "Not Found",
+          "message": "Pet not found",
+          "statusCode": 404
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 404
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Read a deleted pet"
+    },
+    {
+      "category": "Pets",
+      "description": "Deleting an order leaves its pet available and readable.",
+      "group": "Read a pet",
+      "id": "pet.read.after-order-deletion",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet/1"
+      },
+      "response": {
+        "body": {
+          "id": 1,
+          "name": "Milo",
+          "photoUrls": [
+            "https://example.com/milo.jpg"
+          ],
+          "status": "available",
+          "tags": []
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 200
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "relationships"
+      ],
+      "title": "Read a pet after deleting its order"
+    },
+    {
+      "category": "Pets",
+      "description": "ID -1 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Read a pet",
+      "id": "pet.read.invalid-id.-1",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet/-1"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject reading a pet with ID -1"
+    },
+    {
+      "category": "Pets",
+      "description": "ID 0 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Read a pet",
+      "id": "pet.read.invalid-id.0",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet/0"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject reading a pet with ID 0"
+    },
+    {
+      "category": "Pets",
+      "description": "ID 1.5 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Read a pet",
+      "id": "pet.read.invalid-id.1.5",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet/1.5"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject reading a pet with ID 1.5"
+    },
+    {
+      "category": "Pets",
+      "description": "ID 1e2 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Read a pet",
+      "id": "pet.read.invalid-id.1e2",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet/1e2"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject reading a pet with ID 1e2"
+    },
+    {
+      "category": "Pets",
+      "description": "ID 9007199254740992 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Read a pet",
+      "id": "pet.read.invalid-id.9007199254740992",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet/9007199254740992"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject reading a pet with ID 9007199254740992"
+    },
+    {
+      "category": "Pets",
+      "description": "ID abc is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Read a pet",
+      "id": "pet.read.invalid-id.abc",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet/abc"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject reading a pet with ID abc"
+    },
+    {
+      "category": "Pets",
+      "description": "The largest safe integer is a valid ID, but no pet with that ID exists.",
+      "group": "Read a pet",
+      "id": "pet.read.maximum-safe-id",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet/9007199254740991"
+      },
+      "response": {
+        "body": {
+          "error": "Not Found",
+          "message": "Pet not found",
+          "statusCode": 404
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 404
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Read a missing pet at the maximum safe ID"
+    },
+    {
+      "category": "Pets",
+      "description": "Pet 999 has not been created, so the API reports it as missing.",
+      "group": "Read a pet",
+      "id": "pet.read.missing",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet/999"
+      },
+      "response": {
+        "body": {
+          "error": "Not Found",
+          "message": "Pet not found",
+          "statusCode": 404
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 404
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Read a pet that does not exist"
+    },
+    {
+      "category": "Pets",
+      "description": "A saved pet retains its nested category, tags, and status after the application reopens the database.",
+      "group": "Read a pet",
+      "id": "pet.read.persisted",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet/1"
+      },
+      "response": {
+        "body": {
+          "category": {
+            "id": 4,
+            "name": "Cats"
+          },
+          "id": 1,
+          "name": "Milo",
+          "photoUrls": [
+            "https://example.com/milo.jpg"
+          ],
+          "status": "pending",
+          "tags": [
+            {
+              "id": 3,
+              "name": "cute"
+            }
+          ]
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 200
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "persistence"
+      ],
+      "title": "Read a pet after reopening the database"
+    },
+    {
+      "category": "Pets",
+      "description": "Returns the previously created pet, including its category and tags.",
+      "group": "Read a pet",
+      "id": "pet.read.success",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/pet/1"
+      },
+      "response": {
+        "body": {
+          "category": {
+            "id": 1,
+            "name": "Cat"
+          },
+          "id": 1,
+          "name": "Milo",
+          "photoUrls": [
+            "https://example.com/milo.jpg"
+          ],
+          "status": "sold",
+          "tags": [
+            {
+              "id": 2,
+              "name": "cute"
+            }
+          ]
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 200
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Read an existing pet"
+    },
+    {
+      "category": "Pets",
+      "description": "Replacing a previously deleted pet reports it as missing.",
+      "group": "Replace a pet",
+      "id": "pet.replace.missing",
+      "request": {
+        "body": {
+          "id": 1,
+          "name": "Milo",
+          "photoUrls": [
+            "https://example.com/milo.jpg"
+          ]
+        },
+        "method": "PUT",
+        "path": "/pet"
+      },
+      "response": {
+        "body": {
+          "error": "Not Found",
+          "message": "Pet not found",
+          "statusCode": 404
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 404
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Replace a pet that does not exist"
+    },
+    {
+      "category": "Pets",
+      "description": "Omitting category, tags, and status during replacement removes the category and restores defaults.",
+      "group": "Replace a pet",
+      "id": "pet.replace.resets-defaults",
+      "request": {
+        "body": {
+          "id": 1,
+          "name": "New name",
+          "photoUrls": []
+        },
+        "method": "PUT",
+        "path": "/pet"
+      },
+      "response": {
+        "body": {
+          "id": 1,
+          "name": "New name",
+          "photoUrls": [],
+          "status": "available",
+          "tags": []
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 200
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "defaults"
+      ],
+      "title": "Replace a pet and reset optional fields"
+    },
+    {
+      "category": "Inventory",
+      "description": "All pet status counts are zero in a fresh database.",
+      "group": "Read inventory",
+      "id": "store.inventory.empty",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/store/inventory"
+      },
+      "response": {
+        "body": {
+          "available": 0,
+          "pending": 0,
+          "sold": 0
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 200
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "empty-results"
+      ],
+      "title": "Read inventory in an empty database"
+    },
+    {
+      "category": "Inventory",
+      "description": "Creating an order leaves its pet status unchanged, so inventory still counts one available pet.",
+      "group": "Read inventory",
+      "id": "store.inventory.with-order",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/store/inventory"
+      },
+      "response": {
+        "body": {
+          "available": 1,
+          "pending": 0,
+          "sold": 0
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 200
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "relationships"
+      ],
+      "title": "Read inventory after creating an order"
+    },
+    {
+      "category": "Orders",
+      "description": "After creating pet 1, an order defaults to quantity 1, placed status, and incomplete.",
+      "group": "Create an order",
+      "id": "store.order.create.defaults",
+      "request": {
+        "body": {
+          "petId": 1
+        },
+        "method": "POST",
+        "path": "/store/order"
+      },
+      "response": {
+        "body": {
+          "complete": false,
+          "id": 1,
+          "petId": 1,
+          "quantity": 1,
+          "status": "placed"
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 201
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "defaults",
+        "relationships"
+      ],
+      "title": "Create an order with defaults"
+    },
+    {
+      "category": "Orders",
+      "description": "No pet with ID 99 exists, so the order cannot be created.",
+      "group": "Create an order",
+      "id": "store.order.create.missing-pet",
+      "request": {
+        "body": {
+          "petId": 99
+        },
+        "method": "POST",
+        "path": "/store/order"
+      },
+      "response": {
+        "body": {
+          "error": "Not Found",
+          "message": "Pet not found",
+          "statusCode": 404
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 404
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "relationships"
+      ],
+      "title": "Reject an order for a missing pet"
+    },
+    {
+      "category": "Orders",
+      "description": "ID -1 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Delete an order",
+      "id": "store.order.delete.invalid-id.-1",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/store/order/-1"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject deleting a order with ID -1"
+    },
+    {
+      "category": "Orders",
+      "description": "ID 0 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Delete an order",
+      "id": "store.order.delete.invalid-id.0",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/store/order/0"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject deleting a order with ID 0"
+    },
+    {
+      "category": "Orders",
+      "description": "ID 1.5 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Delete an order",
+      "id": "store.order.delete.invalid-id.1.5",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/store/order/1.5"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject deleting a order with ID 1.5"
+    },
+    {
+      "category": "Orders",
+      "description": "ID 1e2 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Delete an order",
+      "id": "store.order.delete.invalid-id.1e2",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/store/order/1e2"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject deleting a order with ID 1e2"
+    },
+    {
+      "category": "Orders",
+      "description": "ID 9007199254740992 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Delete an order",
+      "id": "store.order.delete.invalid-id.9007199254740992",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/store/order/9007199254740992"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject deleting a order with ID 9007199254740992"
+    },
+    {
+      "category": "Orders",
+      "description": "ID abc is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Delete an order",
+      "id": "store.order.delete.invalid-id.abc",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/store/order/abc"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject deleting a order with ID abc"
+    },
+    {
+      "category": "Orders",
+      "description": "The order has already been deleted, so a second deletion reports it as missing.",
+      "group": "Delete an order",
+      "id": "store.order.delete.missing",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/store/order/1"
+      },
+      "response": {
+        "body": {
+          "error": "Not Found",
+          "message": "Order not found",
+          "statusCode": 404
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 404
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Delete an order that does not exist"
+    },
+    {
+      "category": "Orders",
+      "description": "Deletes order 1 while preserving its pet and returns no response body.",
+      "group": "Delete an order",
+      "id": "store.order.delete.success",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/store/order/1"
+      },
+      "response": {
+        "body": null,
+        "status": 204
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "relationships"
+      ],
+      "title": "Delete an existing order"
+    },
+    {
+      "category": "Orders",
+      "description": "ID -1 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Read an order",
+      "id": "store.order.read.invalid-id.-1",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/store/order/-1"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject reading a order with ID -1"
+    },
+    {
+      "category": "Orders",
+      "description": "ID 0 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Read an order",
+      "id": "store.order.read.invalid-id.0",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/store/order/0"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject reading a order with ID 0"
+    },
+    {
+      "category": "Orders",
+      "description": "ID 1.5 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Read an order",
+      "id": "store.order.read.invalid-id.1.5",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/store/order/1.5"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject reading a order with ID 1.5"
+    },
+    {
+      "category": "Orders",
+      "description": "ID 1e2 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Read an order",
+      "id": "store.order.read.invalid-id.1e2",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/store/order/1e2"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject reading a order with ID 1e2"
+    },
+    {
+      "category": "Orders",
+      "description": "ID 9007199254740992 is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Read an order",
+      "id": "store.order.read.invalid-id.9007199254740992",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/store/order/9007199254740992"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject reading a order with ID 9007199254740992"
+    },
+    {
+      "category": "Orders",
+      "description": "ID abc is not a positive safe integer in the accepted format; the request is rejected.",
+      "group": "Read an order",
+      "id": "store.order.read.invalid-id.abc",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/store/order/abc"
+      },
+      "response": {
+        "body": {
+          "error": "Bad Request",
+          "message": "ID must be a positive safe integer",
+          "statusCode": 400
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 400
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Reject reading a order with ID abc"
+    },
+    {
+      "category": "Orders",
+      "description": "The largest safe integer is a valid ID, but no order with that ID exists.",
+      "group": "Read an order",
+      "id": "store.order.read.maximum-safe-id",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/store/order/9007199254740991"
+      },
+      "response": {
+        "body": {
+          "error": "Not Found",
+          "message": "Order not found",
+          "statusCode": 404
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 404
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "boundary-values"
+      ],
+      "title": "Read a missing order at the maximum safe ID"
+    },
+    {
+      "category": "Orders",
+      "description": "After deleting order 1, reading it reports that it no longer exists.",
+      "group": "Read an order",
+      "id": "store.order.read.missing",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/store/order/1"
+      },
+      "response": {
+        "body": {
+          "error": "Not Found",
+          "message": "Order not found",
+          "statusCode": 404
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 404
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Read a deleted order"
+    },
+    {
+      "category": "Orders",
+      "description": "The saved quantity, shipping date, status, and completion flag survive reopening the database.",
+      "group": "Read an order",
+      "id": "store.order.read.persisted",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/store/order/1"
+      },
+      "response": {
+        "body": {
+          "complete": true,
+          "id": 1,
+          "petId": 1,
+          "quantity": 2,
+          "shipDate": "2026-10-10T12:00:00Z",
+          "status": "approved"
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 200
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "persistence"
+      ],
+      "title": "Read an order after reopening the database"
+    },
+    {
+      "category": "Orders",
+      "description": "Returns the previously created order and its default values.",
+      "group": "Read an order",
+      "id": "store.order.read.success",
+      "request": {
+        "body": null,
+        "method": "GET",
+        "path": "/store/order/1"
+      },
+      "response": {
+        "body": {
+          "complete": false,
+          "id": 1,
+          "petId": 1,
+          "quantity": 1,
+          "status": "placed"
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 200
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Read an existing order"
+    },
+    {
+      "category": "Training",
+      "description": "After seeding, deletes all orders and pets and resets their ID sequences.",
+      "group": "Clear the database",
+      "id": "training.database.clear",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/training/database"
+      },
+      "response": {
+        "body": null,
+        "status": 204
+      },
+      "schemaVersion": 1,
+      "tags": [],
+      "title": "Clear the training database"
+    },
+    {
+      "category": "Training",
+      "description": "Clearing a second time succeeds without requiring any existing records.",
+      "group": "Clear the database",
+      "id": "training.database.clear-already-empty",
+      "request": {
+        "body": null,
+        "method": "DELETE",
+        "path": "/training/database"
+      },
+      "response": {
+        "body": null,
+        "status": 204
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "repeatability",
+        "empty-results"
+      ],
+      "title": "Clear an already empty database"
+    },
+    {
+      "category": "Training",
+      "description": "After modifying and adding data, seeding again restores the same six pets and three orders.",
+      "group": "Seed the database",
+      "id": "training.seed.repeatable",
+      "request": {
+        "body": null,
+        "method": "POST",
+        "path": "/training/seed"
+      },
+      "response": {
+        "body": {
+          "inventory": {
+            "available": 2,
+            "pending": 2,
+            "sold": 2
+          },
+          "orders": 3,
+          "pets": 6
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 200
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "repeatability"
+      ],
+      "title": "Repeat the training seed"
+    },
+    {
+      "category": "Training",
+      "description": "Existing pets and orders are replaced with six pets and three orders, with IDs starting at 1.",
+      "group": "Seed the database",
+      "id": "training.seed.replaces-existing",
+      "request": {
+        "body": null,
+        "method": "POST",
+        "path": "/training/seed"
+      },
+      "response": {
+        "body": {
+          "inventory": {
+            "available": 2,
+            "pending": 2,
+            "sold": 2
+          },
+          "orders": 3,
+          "pets": 6
+        },
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "status": 200
+      },
+      "schemaVersion": 1,
+      "tags": [
+        "defaults"
+      ],
+      "title": "Replace existing data with training examples"
+    }
+  ]
+}

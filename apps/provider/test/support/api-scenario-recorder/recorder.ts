@@ -8,7 +8,12 @@ import {
   validateRequest,
   validateScenario,
 } from './schema.js';
-import type { Json, RequestExample, Scenario } from './schema.js';
+import type {
+  Json,
+  RequestExample,
+  Scenario,
+  ScenarioMetadata,
+} from './schema.js';
 import { atomicWrite, compareIds } from './writer.js';
 
 /** Only expectations and awaiting are exposed; callers cannot mutate the request. */
@@ -114,8 +119,7 @@ export function createScenarioRecorder(options: {
         body?: Json;
       },
       assert: (test: ScenarioTest) => PromiseLike<Response>,
-      metadata: {
-        description?: string;
+      metadata: ScenarioMetadata & {
         requestMatch?: RequestExample['match'];
       } = {},
     ): Promise<Response> {
@@ -135,6 +139,12 @@ export function createScenarioRecorder(options: {
       const candidate = {
         schemaVersion: 1,
         id,
+        ...(metadata.title === undefined ? {} : { title: metadata.title }),
+        ...(metadata.category === undefined
+          ? {}
+          : { category: metadata.category }),
+        ...(metadata.group === undefined ? {} : { group: metadata.group }),
+        ...(metadata.tags === undefined ? {} : { tags: metadata.tags }),
         ...(metadata.description === undefined
           ? {}
           : { description: metadata.description }),
@@ -142,6 +152,7 @@ export function createScenarioRecorder(options: {
         response: { status: 200, body: null },
       };
       validateScenario(candidate);
+      if (candidate.tags !== undefined) candidate.tags = [...candidate.tags];
       const snapshot = snapshotRequest(example, id);
       pendingIds.add(id);
       try {

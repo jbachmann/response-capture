@@ -222,3 +222,14 @@ Demonstrate the tooling in at least one existing integration-test suite if feasi
 ## 11. Deferred enhancements
 
 Potential follow-on work includes request/response field normalization, optional OpenAPI checks, reusable JSON schemas, route-template metadata, query-aware matching, and more advanced recording of multi-request test flows. These are not required for this release.
+
+## Dynamic catalog browsing metadata
+
+Version 1 scenario records now optionally include `title`, `category`, `group`,
+`tags`, and the existing `description`. These labels are authored at recording
+call sites and preserved during merging; no fixed category/group/tag vocabulary
+is enforced. Titles, categories, and groups must be nonblank strings, and tags
+must be unique nonblank strings. Updated validators accept both old and enriched
+records; older strict validators require updating before reading enriched data.
+See the [recorder guide](../test/support/api-scenario-recorder/README.md#browsing-metadata)
+for the metadata argument and an example.

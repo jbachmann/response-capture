@@ -14,7 +14,12 @@ describe('pet behavior (e2e)', () => {
           .expect(201)
           .expect({ ...pet, id: 1, tags: [], status: 'available' }),
       {
-        description: 'Creates a pet from a synthetic fixture',
+        title: 'Create a pet with defaults',
+        category: 'Pets',
+        group: 'Create a pet',
+        description:
+          'Creates Milo with no category or tags and the default available status.',
+        tags: ['defaults'],
         requestMatch: { bodyContains: { name: 'Milo' } },
       },
     );
@@ -22,11 +27,27 @@ describe('pet behavior (e2e)', () => {
       'pet.create.invalid',
       { method: 'POST', path: '/pet', body: {} },
       (test) => test.expect(400),
+      {
+        title: 'Reject a pet with missing fields',
+        category: 'Pets',
+        group: 'Create a pet',
+        description:
+          'An empty request is rejected because a name and photo URLs are required.',
+        tags: [],
+      },
     );
     await recorder.recordScenario(
       'pet.read.missing',
       { method: 'GET', path: '/pet/999' },
       (test) => test.expect(404),
+      {
+        title: 'Read a pet that does not exist',
+        category: 'Pets',
+        group: 'Read a pet',
+        description:
+          'Pet 999 has not been created, so the API reports it as missing.',
+        tags: [],
+      },
     );
     await recorder.recordScenario(
       'pet.list.success',
@@ -38,11 +59,26 @@ describe('pet behavior (e2e)', () => {
         ]);
         return response;
       },
+      {
+        title: 'List existing pets',
+        category: 'Pets',
+        group: 'List pets',
+        description: 'After creating Milo, the list contains that pet.',
+        tags: [],
+      },
     );
     await recorder.recordScenario(
       'pet.delete.success',
       { method: 'DELETE', path: '/pet/1' },
       (test) => test.expect(204),
+      {
+        title: 'Delete an existing pet',
+        category: 'Pets',
+        group: 'Delete a pet',
+        description:
+          'Deletes a pet with no referencing orders and returns no response body.',
+        tags: [],
+      },
     );
     await recorder.flush();
   });
@@ -54,11 +90,25 @@ describe('pet behavior (e2e)', () => {
       'pet.list.empty',
       { method: 'GET', path: '/pet' },
       (test) => test.expect(200).expect([]),
+      {
+        title: 'List pets in an empty database',
+        category: 'Pets',
+        group: 'List pets',
+        description: 'A fresh database returns an empty list.',
+        tags: ['empty-results'],
+      },
     );
     await recorder.recordScenario(
       'store.inventory.empty',
       { method: 'GET', path: '/store/inventory' },
       (test) => test.expect(200).expect({ available: 0, pending: 0, sold: 0 }),
+      {
+        title: 'Read inventory in an empty database',
+        category: 'Inventory',
+        group: 'Read inventory',
+        description: 'All pet status counts are zero in a fresh database.',
+        tags: ['empty-results'],
+      },
     );
     await recorder.flush();
   });
@@ -84,12 +134,27 @@ describe('pet behavior (e2e)', () => {
           });
           return response;
         },
+        {
+          title: 'Create a pet with category and tags',
+          category: 'Pets',
+          group: 'Create a pet',
+          description: 'Creates a sold pet with an explicit category and tag.',
+          tags: [],
+        },
       )
     ).body;
     await recorder.recordScenario(
       'pet.read.success',
       { method: 'GET', path: '/pet/1' },
       (test) => test.expect(200).expect(created),
+      {
+        title: 'Read an existing pet',
+        category: 'Pets',
+        group: 'Read a pet',
+        description:
+          'Returns the previously created pet, including its category and tags.',
+        tags: [],
+      },
     );
     await api().get('/pet').expect(200).expect([created]);
     const replaced = { id: 1, name: 'New name', photoUrls: [] };
@@ -98,6 +163,14 @@ describe('pet behavior (e2e)', () => {
       { method: 'PUT', path: '/pet', body: replaced },
       (test) =>
         test.expect(200).expect({ ...replaced, tags: [], status: 'available' }),
+      {
+        title: 'Replace a pet and reset optional fields',
+        category: 'Pets',
+        group: 'Replace a pet',
+        description:
+          'Omitting category, tags, and status during replacement removes the category and restores defaults.',
+        tags: ['defaults'],
+      },
     );
     await recorder.recordScenario(
       'pet.delete.after-replacement',
@@ -107,21 +180,53 @@ describe('pet behavior (e2e)', () => {
         expect(response.text).toBe('');
         return response;
       },
+      {
+        title: 'Delete a replaced pet',
+        category: 'Pets',
+        group: 'Delete a pet',
+        description:
+          'After replacing the pet, deletion succeeds and returns no response body.',
+        tags: [],
+      },
     );
     await recorder.recordScenario(
       'pet.read.after-deletion',
       { method: 'GET', path: '/pet/1' },
       (test) => test.expect(404),
+      {
+        title: 'Read a deleted pet',
+        category: 'Pets',
+        group: 'Read a pet',
+        description:
+          'After deleting pet 1, reading it reports that it no longer exists.',
+        tags: [],
+      },
     );
     await recorder.recordScenario(
       'pet.delete.missing',
       { method: 'DELETE', path: '/pet/1' },
       (test) => test.expect(404),
+      {
+        title: 'Delete a pet that does not exist',
+        category: 'Pets',
+        group: 'Delete a pet',
+        description:
+          'The pet has already been deleted, so a second deletion reports it as missing.',
+        tags: [],
+      },
     );
     await recorder.recordScenario(
       'pet.replace.missing',
       { method: 'PUT', path: '/pet', body: { ...pet, id: 1 } },
       (test) => test.expect(404),
+      {
+        title: 'Replace a pet that does not exist',
+        category: 'Pets',
+        group: 'Replace a pet',
+        description:
+          'Replacing a previously deleted pet reports it as missing.',
+        tags: [],
+      },
     );
     await recorder.flush();
   });

@@ -1,0 +1,43 @@
+@for (category of categories(); track category.name) {
+  <section class="category" [attr.aria-label]="category.name ?? 'Uncategorized'">
+    <h2>
+      {{ category.name ?? 'Uncategorized' }} <span class="count">{{ category.count }}</span>
+    </h2>
+    @for (group of category.groups; track group.name) {
+      @if (group.name) {
+        <h3>
+          {{ group.name }} <span>{{ group.scenarios.length }}</span>
+        </h3>
+      }
+      <ul class="scenario-items">
+        @for (scenario of group.scenarios; track scenario.id) {
+          <li>
+            <button
+              class="scenario"
+              type="button"
+              [attr.data-scenario-id]="scenario.id"
+              [class.selected]="selectedId() === scenario.id"
+              [attr.aria-current]="selectedId() === scenario.id ? 'true' : null"
+              (click)="selected.emit(scenario.id)"
+            >
+              <span class="scenario-heading"
+                ><strong>{{ title(scenario) }}</strong
+                ><span class="status-badge">{{ status(scenario.response.status) }}</span></span
+              >
+              @if (scenario.description) {
+                <span class="scenario-description">{{ scenario.description }}</span>
+              }
+              <span class="scenario-endpoint"
+                ><span class="method">{{ scenario.request.method }}</span
+                ><code>{{ scenario.request.path }}</code
+                ><span class="open-label"
+                  >View details <span aria-hidden="true">↗</span></span
+                ></span
+              >
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+}

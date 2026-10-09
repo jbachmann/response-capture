@@ -22,6 +22,7 @@ import {
 import { CatalogRepository } from './catalog.repository.js';
 import { validateSubmission } from './catalog-submission.js';
 import type { StoredCatalogSubmission } from './catalog-submission.js';
+import type { CatalogInventoryResponse } from './catalog-inventory.js';
 
 @Controller()
 @ApiTags('Catalogs')
@@ -29,6 +30,48 @@ export class CatalogController {
   constructor(
     @Inject(CatalogRepository) private readonly catalogs: CatalogRepository,
   ) {}
+
+  @Get('catalog-inventory')
+  @ApiOperation({
+    summary: 'Get the catalog inventory',
+    description:
+      'Lists systems by name and their catalog metadata newest first, without catalog payloads. Timestamp ties use submission sequence.',
+  })
+  @ApiOkResponse({
+    description:
+      'Available catalogs grouped by system. An empty database returns { systems: [] }.',
+    schema: {
+      type: 'object',
+      required: ['systems'],
+      properties: {
+        systems: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['name', 'catalogs'],
+            properties: {
+              name: { type: 'string', example: 'provider' },
+              catalogs: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  required: ['commitHash', 'submittedOn'],
+                  properties: {
+                    commitHash: { type: 'string', example: 'example-commit' },
+                    alias: { type: 'string', example: 'main' },
+                    submittedOn: { type: 'string', format: 'date-time' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  inventory(): CatalogInventoryResponse {
+    return this.catalogs.inventory();
+  }
 
   @Get('catalog-submission')
   @ApiOperation({

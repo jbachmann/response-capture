@@ -29,6 +29,7 @@ curl http://localhost:3001/catalogs/provider
 curl http://localhost:3001/catalogs/provider/main
 curl http://localhost:3001/catalogs/provider/example-commit
 curl http://localhost:3001/catalog-submission
+curl http://localhost:3001/catalog-inventory
 ```
 
 `PUT /catalog-submissions` requires nonblank string `systemName` and `commitHash`,
@@ -43,6 +44,30 @@ with `systemName`, `commitHash`, `catalog`, and a UTC `submittedAt` timestamp.
 `alias` is included only when supplied. An empty database returns `[]` with `200`.
 Timestamp ties use the submission sequence. Replaced submissions appear once,
 with their updated payload, alias, and timestamp.
+
+`GET /catalog-inventory` returns a manifest grouped by system, without catalog
+payloads. Systems are ordered by name; each system's `catalogs` array is ordered
+newest first, with submission sequence resolving timestamp ties. Each entry has
+`commitHash`, optional `alias`, and `submittedOn` (a UTC ISO 8601 timestamp in JSON).
+Replaced submissions appear once with current metadata. An empty database returns
+`{ "systems": [] }` with `200`.
+
+```json
+{
+  "systems": [
+    {
+      "name": "provider",
+      "catalogs": [
+        {
+          "commitHash": "example-commit",
+          "alias": "main",
+          "submittedOn": "2026-10-09T12:00:00.000Z"
+        }
+      ]
+    }
+  ]
+}
+```
 
 The system/commit pair is unique. Submitting it again replaces the entire catalog
 and alias, clears the alias when omitted, and refreshes the server-generated UTC

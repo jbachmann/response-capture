@@ -20,6 +20,57 @@ describe('catalog API', () => {
     vi.unstubAllEnvs();
   });
 
+  it('returns inventory grouped by system with ISO dates and no catalog payloads', async () => {
+    await request(app.getHttpServer())
+      .get('/catalog-inventory')
+      .expect(200, { systems: [] });
+    for (const submission of [
+      {
+        systemName: 'provider',
+        commitHash: 'one',
+        alias: 'main',
+        catalog: { privatePayload: true },
+      },
+      { systemName: 'consumer', commitHash: 'one', catalog: {} },
+      { systemName: 'provider', commitHash: 'two', catalog: {} },
+      {
+        systemName: 'provider',
+        commitHash: 'one',
+        catalog: { replaced: true },
+      },
+    ]) {
+      await request(app.getHttpServer())
+        .put('/catalog-submissions')
+        .send(submission)
+        .expect(204);
+    }
+    const { body } = await request(app.getHttpServer())
+      .get('/catalog-inventory')
+      .expect(200);
+    expect(body).toEqual({
+      systems: [
+        {
+          name: 'consumer',
+          catalogs: [{ commitHash: 'one', submittedOn: expect.any(String) }],
+        },
+        {
+          name: 'provider',
+          catalogs: [
+            { commitHash: 'one', submittedOn: expect.any(String) },
+            { commitHash: 'two', submittedOn: expect.any(String) },
+          ],
+        },
+      ],
+    });
+    for (const system of body.systems) {
+      for (const catalog of system.catalogs) {
+        expect(new Date(catalog.submittedOn).toISOString()).toBe(
+          catalog.submittedOn,
+        );
+      }
+    }
+  });
+
   it('lists stored submissions with metadata and catalog payloads', async () => {
     await request(app.getHttpServer())
       .get('/catalog-submission')

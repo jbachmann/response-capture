@@ -40,6 +40,26 @@ describe('Swagger documentation', () => {
       .get('/docs-json')
       .expect(200);
     expect(document.info.title).toBe('Catalog API');
+    const inventory =
+      document.paths['/catalog-inventory'].get.responses['200'].content[
+        'application/json'
+      ].schema;
+    expect(inventory.required).toEqual(['systems']);
+    expect(inventory.properties.systems.type).toBe('array');
+    const system = inventory.properties.systems.items;
+    expect(system.required).toEqual(['name', 'catalogs']);
+    expect(system.properties.catalogs.type).toBe('array');
+    const inventoryCatalog = system.properties.catalogs.items;
+    expect(inventoryCatalog.required).toEqual(['commitHash', 'submittedOn']);
+    expect(Object.keys(inventoryCatalog.properties).sort()).toEqual([
+      'alias',
+      'commitHash',
+      'submittedOn',
+    ]);
+    expect(inventoryCatalog.properties.submittedOn).toEqual({
+      type: 'string',
+      format: 'date-time',
+    });
     const list = document.paths['/catalog-submission'].get;
     const listSchema = list.responses['200'].content['application/json'].schema;
     expect(listSchema.type).toBe('array');

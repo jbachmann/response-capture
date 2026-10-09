@@ -6,6 +6,10 @@ import type {
   CatalogSubmission,
   StoredCatalogSubmission,
 } from './catalog-submission.js';
+import type {
+  CatalogInventoryResponse,
+  CatalogInventorySystem,
+} from './catalog-inventory.js';
 
 @Injectable()
 export class CatalogRepository implements OnModuleDestroy {
@@ -75,6 +79,31 @@ export class CatalogRepository implements OnModuleDestroy {
       this.db.exec('ROLLBACK');
       throw error;
     }
+  }
+
+  inventory(): CatalogInventoryResponse {
+    const systems = new Map<string, CatalogInventorySystem>();
+    const rows = this.db
+      .prepare(
+        `SELECT system_name, commit_hash, alias, submitted_at
+         FROM catalog_submissions
+         ORDER BY system_name ASC, submitted_at DESC, submission_sequence DESC`,
+      )
+      .all();
+    for (const row of rows) {
+      const name = row.system_name as string;
+      let system = systems.get(name);
+      if (system === undefined) {
+        system = { name, catalogs: [] };
+        systems.set(name, system);
+      }
+      system.catalogs.push({
+        commitHash: row.commit_hash as string,
+        ...(row.alias === null ? {} : { alias: row.alias as string }),
+        submittedOn: new Date(row.submitted_at as string),
+      });
+    }
+    return { systems: [...systems.values()] };
   }
 
   list(): StoredCatalogSubmission[] {

@@ -25,6 +25,71 @@ describe('catalog persistence', () => {
     rmSync(directory, { recursive: true, force: true });
   });
 
+  it('groups inventory metadata by system and preserves ordering after replacements and reopening', () => {
+    expect(repository.inventory()).toEqual({ systems: [] });
+    const initialTime = new Date('2026-10-09T12:00:00Z');
+    repository.submit({
+      systemName: 'z',
+      commitHash: 'one',
+      alias: 'main',
+      catalog: { payload: true },
+    });
+    repository.submit({
+      systemName: '__proto__',
+      commitHash: 'one',
+      alias: '',
+      catalog: {},
+    });
+    repository.submit({ systemName: 'z', commitHash: 'two', catalog: {} });
+    expect(repository.inventory()).toEqual({
+      systems: [
+        {
+          name: '__proto__',
+          catalogs: [
+            { commitHash: 'one', alias: '', submittedOn: initialTime },
+          ],
+        },
+        {
+          name: 'z',
+          catalogs: [
+            { commitHash: 'two', submittedOn: initialTime },
+            { commitHash: 'one', alias: 'main', submittedOn: initialTime },
+          ],
+        },
+      ],
+    });
+    vi.setSystemTime(new Date('2026-10-09T11:00:00Z'));
+    repository.submit({ systemName: 'z', commitHash: 'three', catalog: {} });
+    vi.setSystemTime(new Date('2026-10-09T13:00:00Z'));
+    repository.submit({ systemName: 'z', commitHash: 'one', catalog: {} });
+    repository.onModuleDestroy();
+    repository = new CatalogRepository();
+    expect(repository.inventory()).toEqual({
+      systems: [
+        {
+          name: '__proto__',
+          catalogs: [
+            { commitHash: 'one', alias: '', submittedOn: initialTime },
+          ],
+        },
+        {
+          name: 'z',
+          catalogs: [
+            {
+              commitHash: 'one',
+              submittedOn: new Date('2026-10-09T13:00:00Z'),
+            },
+            { commitHash: 'two', submittedOn: initialTime },
+            {
+              commitHash: 'three',
+              submittedOn: new Date('2026-10-09T11:00:00Z'),
+            },
+          ],
+        },
+      ],
+    });
+  });
+
   it('lists all systems in timestamp and sequence order after replacements and reopening', () => {
     expect(repository.list()).toEqual([]);
     const first = {

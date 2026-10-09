@@ -73,7 +73,16 @@ command but retain the generated local file.
 The catalog API stores submissions in `apps/catalog/data/catalog.sqlite` by
 default; `CATALOG_DATABASE_PATH` overrides it independently of the provider's
 `DATABASE_PATH`. See the [catalog API documentation](apps/catalog/README.md) for
-lookup routes and persistence configuration.
+lookup routes and persistence configuration. The consumer Scenario library loads
+catalog inventory from that API and lets you select a system and Latest or a
+recorded commit. Its default system is the first alphabetically.
+
+For production, forward `/catalog-inventory` and `/catalogs/**` on the consumer's
+origin to the catalog API. Forward petstore, order, and training routes to the
+provider. Serve the Angular application for `/scenarios` and other UI routes;
+never apply the Angular fallback to API paths. The provider no longer serves
+`/training/catalog`.
+
 Generated output, runtime data, and recordings are ignored by Git and excluded
 from build and unit-test cache inputs. Remote caching is not configured.
 

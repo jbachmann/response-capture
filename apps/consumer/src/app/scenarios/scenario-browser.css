@@ -74,6 +74,12 @@ h1 span {
   border-color: var(--accent);
   margin-top: 1rem;
 }
+.catalog-selection {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
 .filters {
   background: #fff;
   border: 1px solid var(--border);
@@ -208,6 +214,9 @@ footer {
   }
 }
 @media (max-width: 480px) {
+  .catalog-selection {
+    grid-template-columns: 1fr;
+  }
   .intro {
     align-items: start;
     flex-direction: column;

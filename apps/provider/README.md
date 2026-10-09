@@ -66,7 +66,6 @@ application errors. Database operations are synchronous.
 | POST | `/store/order` | Create an order for an existing pet (201) |
 | GET | `/store/order/:orderId` | Read an order (200) |
 | DELETE | `/store/order/:orderId` | Delete an order (204) |
-| GET | `/training/catalog` | Return the generated API scenario catalog (200; 404 if missing) |
 | POST | `/training/seed` | Clear and repopulate static training data (200) |
 | DELETE | `/training/database` | Clear all pets and orders (204) |
 
@@ -192,7 +191,8 @@ HTTP/network errors or the 30-second submission timeout fail the command while
 retaining the generated file. Correct the API connection and rerun the merge.
 Git metadata errors also fail the command. See the
 [catalog API](../catalog/README.md) for storage and lookup behavior.
-`GET /training/catalog` reads this file on each request and returns its JSON content.
+The consumer browses submitted catalogs through the catalog API; the provider
+does not expose a catalog-reading endpoint.
 Use synthetic fixtures and keep all scenario assertions inside the recorder
 callback. Clear old recordings before a new run; the merger rejects duplicate
 IDs across runs as well as across suites.

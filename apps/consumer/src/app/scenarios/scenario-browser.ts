@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -13,7 +14,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { CatalogService } from './catalog.service';
+import { CatalogService, CatalogSystem } from './catalog.service';
 import {
   emptyFilters,
   Filters,
@@ -27,10 +28,11 @@ import {
 import { ScenarioDetail } from './scenario-detail';
 import { ScenarioList } from './scenario-list';
 
-type LoadState = 'loading' | 'ready' | 'missing' | 'error' | 'invalid';
+type LoadState =
+  'loading' | 'ready' | 'missing' | 'error' | 'invalid' | 'empty-inventory' | 'inventory-error';
 @Component({
   selector: 'app-scenario-browser',
-  imports: [ReactiveFormsModule, ScenarioDetail, ScenarioList],
+  imports: [DatePipe, ReactiveFormsModule, ScenarioDetail, ScenarioList],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './scenario-browser.html',
   styleUrl: './scenario-browser.css',
@@ -42,6 +44,15 @@ export class ScenarioBrowser {
   private readonly destroyRef = inject(DestroyRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private request?: Subscription;
+  private inventoryRequest?: Subscription;
+  private inventoryLoaded = false;
+  protected readonly inventoryLoading = signal(false);
+  protected readonly systems = signal<CatalogSystem[]>([]);
+  protected readonly system = signal('');
+  protected readonly commit = signal('');
+  protected readonly versions = computed(
+    () => this.systems().find((system) => system.name === this.system())?.catalogs ?? [],
+  );
   private readonly detailRegion = viewChild<ElementRef<HTMLElement>>('detailRegion');
   protected readonly scenarios = signal<Scenario[]>([]);
   protected readonly state = signal<LoadState>('loading');
@@ -59,6 +70,11 @@ export class ScenarioBrowser {
 
   constructor() {
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const system = params.get('system') ?? '';
+      const commit = params.get('commit') ?? '';
+      const catalogChanged = system !== this.system() || commit !== this.commit();
+      this.system.set(system);
+      this.commit.set(commit);
       const filters = {
         q: params.get('q') ?? '',
         category: params.get('category') ?? '',
@@ -67,27 +83,89 @@ export class ScenarioBrowser {
         status: params.get('status') ?? '',
       };
       this.filters.set(
-        this.state() === 'ready' ? normalizeFilters(filters, this.scenarios()) : filters,
+        this.state() === 'ready' && !catalogChanged
+          ? normalizeFilters(filters, this.scenarios())
+          : filters,
       );
       this.selectedId.set(params.get('scenario') ?? '');
       this.search.setValue(this.filters().q, { emitEvent: false });
-      if (this.state() === 'ready') this.reconcile();
+      if (catalogChanged && this.inventoryLoaded && !this.inventoryLoading()) {
+        this.resolveSelection();
+        this.loadCatalog();
+      } else if (this.state() === 'ready') {
+        this.reconcile();
+      }
     });
     this.search.valueChanges.pipe(takeUntilDestroyed()).subscribe((q) => this.setFilter('q', q));
-    this.destroyRef.onDestroy(() => this.request?.unsubscribe());
+    this.destroyRef.onDestroy(() => {
+      this.request?.unsubscribe();
+      this.inventoryRequest?.unsubscribe();
+    });
     this.refresh();
   }
 
   protected refresh(): void {
+    this.inventoryRequest?.unsubscribe();
     this.request?.unsubscribe();
+    this.inventoryLoading.set(true);
+    this.scenarios.set([]);
     this.state.set('loading');
-    this.request = this.service.load().subscribe({
+    this.inventoryRequest = this.service.inventory().subscribe({
+      next: (inventory) => {
+        this.systems.set(inventory.systems);
+        this.inventoryLoaded = true;
+        this.inventoryLoading.set(false);
+        this.resolveSelection();
+        this.loadCatalog();
+      },
+      error: () => {
+        this.inventoryLoading.set(false);
+        this.state.set('inventory-error');
+      },
+    });
+  }
+
+  private resolveSelection(): void {
+    if (!this.systems().some((system) => system.name === this.system())) {
+      this.system.set(this.systems()[0]?.name ?? '');
+      this.commit.set('');
+    }
+    if (!this.versions().some((version) => version.commitHash === this.commit())) {
+      this.commit.set('');
+    }
+    this.writeUrl(true);
+  }
+
+  protected changeSystem(system: string): void {
+    this.changeCatalog(system, '');
+  }
+
+  protected changeVersion(commit: string): void {
+    this.changeCatalog(this.system(), commit);
+  }
+
+  private changeCatalog(system: string, commit: string): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { system, ...(commit ? { commit } : {}) },
+    });
+  }
+
+  private loadCatalog(): void {
+    this.request?.unsubscribe();
+    this.scenarios.set([]);
+    if (!this.system()) {
+      this.state.set('empty-inventory');
+      return;
+    }
+    this.state.set('loading');
+    this.request = this.service.load(this.system(), this.commit()).subscribe({
       next: (catalog) => {
         this.scenarios.set(catalog.scenarios);
         this.state.set('ready');
         this.reconcile();
       },
-      error: (error) =>
+      error: (error: unknown) =>
         this.state.set(
           error instanceof HttpErrorResponse
             ? error.status === 404
@@ -99,6 +177,7 @@ export class ScenarioBrowser {
   }
   private reconcile(): void {
     this.filters.set(normalizeFilters(this.filters(), this.scenarios()));
+    this.search.setValue(this.filters().q, { emitEvent: false });
     if (!this.scenarios().some((s) => s.id === this.selectedId())) this.selectedId.set('');
     this.writeUrl(true);
   }
@@ -129,9 +208,12 @@ export class ScenarioBrowser {
   }
   private writeUrl(replaceUrl: boolean): void {
     const queryParams = Object.fromEntries(
-      Object.entries({ ...this.filters(), scenario: this.selectedId() }).filter(
-        ([, value]) => value !== '',
-      ),
+      Object.entries({
+        system: this.system(),
+        commit: this.commit(),
+        ...this.filters(),
+        scenario: this.selectedId(),
+      }).filter(([, value]) => value !== ''),
     );
     const current = this.route.snapshot.queryParams;
     if (

@@ -10,22 +10,73 @@
       data-refresh
       type="button"
       (click)="refresh()"
-      [disabled]="state() === 'loading'"
+      [disabled]="inventoryLoading()"
     >
       Refresh catalog
     </button>
   </div>
+  @if (systems().length) {
+    <section class="catalog-selection" aria-label="Choose a catalog">
+      <label
+        >System<select
+          #systemSelect
+          data-system
+          [value]="system()"
+          [disabled]="inventoryLoading()"
+          (change)="changeSystem(systemSelect.value)"
+        >
+          @for (item of systems(); track item.name) {
+            <option [value]="item.name" [selected]="item.name === system()">{{ item.name }}</option>
+          }
+        </select></label
+      >
+      <label
+        >Version<select
+          #versionSelect
+          data-version
+          [value]="commit()"
+          [disabled]="inventoryLoading()"
+          (change)="changeVersion(versionSelect.value)"
+        >
+          <option value="" [selected]="!commit()">Latest</option>
+          @for (version of versions(); track version.commitHash) {
+            <option [value]="version.commitHash" [selected]="version.commitHash === commit()">
+              {{ version.commitHash }}{{ version.alias ? ' · ' + version.alias : '' }} ·
+              {{ version.submittedOn | date: 'medium' }}
+            </option>
+          }
+        </select></label
+      >
+    </section>
+  }
   @if (state() === 'loading') {
     <div class="state" role="status">
       <h2>Loading scenarios…</h2>
-      <p>Getting the latest catalog.</p>
+      <p>
+        {{
+          inventoryLoading() ? 'Discovering available catalogs.' : 'Getting the selected catalog.'
+        }}
+      </p>
+    </div>
+  } @else if (state() === 'empty-inventory') {
+    <div class="state" role="status">
+      <h2>No catalogs yet</h2>
+      <p>Submit a scenario catalog to the catalog API to start browsing.</p>
+      <button class="primary" type="button" (click)="refresh()">Try again</button>
     </div>
   } @else if (state() !== 'ready') {
     <div class="state" role="alert">
       @switch (state()) {
         @case ('missing') {
           <h2>The catalog isn’t available yet</h2>
-          <p>Scenario recordings need to be generated and merged before you can browse them.</p>
+          <p>
+            The selected catalog is no longer available. Choose another version or refresh the
+            catalog inventory.
+          </p>
+        }
+        @case ('inventory-error') {
+          <h2>We couldn’t load the catalog inventory</h2>
+          <p>Check your connection to the catalog API and try again.</p>
         }
         @case ('invalid') {
           <h2>This catalog can’t be displayed</h2>

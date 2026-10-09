@@ -73,10 +73,17 @@ For more information on using the Angular CLI, including detailed command refere
 
 ## Scenario library
 
-The scenario library remains available at `/scenarios`. The browser fetches `/training/catalog`
-on entry and when **Refresh catalog** is selected. It never substitutes a local
-sample file. Run both applications locally; Angular's development proxy forwards
-`/training/**` to `http://localhost:3000`.
+The scenario library remains available at `/scenarios`. It fetches
+`/catalog-inventory` on entry and refresh, then loads the selected system from
+`/catalogs/:systemName` (Latest) or `/catalogs/:systemName/:selector` (a commit).
+The default is the first system alphabetically and Latest. The System and Version
+selectors let you browse all submitted systems and commits, with aliases and
+submission dates shown beside each commit. It never substitutes a local sample.
+
+Run the consumer and catalog API locally. Angular's development proxy forwards
+`/catalog-inventory` and `/catalogs/**` to `http://localhost:3001`. Start the catalog
+API before generating and merging provider recordings; merging submits the catalog
+automatically. See the [catalog API documentation](../catalog/README.md).
 
 Categories, task groups, tags, and response-status choices come entirely from the
 loaded catalog. Optional `title`, `category`, `group`, `tags`, and `description`
@@ -85,12 +92,19 @@ the title and appear under **Uncategorized** when category is absent. Missing
 metadata does not create filter choices. Request and response JSON remain exact
 recorded examples, including `null` bodies.
 
+System and version are stored in URL parameters `system` and `commit`; omitting
+`commit` selects Latest. Changing either selector clears scenario filters and
+details. Browser back/forward restores catalog selection and scenario state.
+Refresh preserves valid selections and falls back to the first system or Latest
+if a selected system or commit disappears.
+
 Search, filters, and selected scenario are stored in URL query parameters (`q`,
 `category`, `group`, `tag`, `status`, `scenario`). Removed values are cleared when
 the catalog reloads. Browsing does not execute any scenario requests.
 
 For production, configure your static host to serve the Angular application for
-`/scenarios` and forward `/training/catalog` to the provider on the same origin.
+`/scenarios` and forward `/catalog-inventory` and `/catalogs/**` to the catalog
+API on the same origin.
 The development proxy is not included in the production build.
 
 Component tests use arbitrary non-provider metadata and run axe WCAG A/AA checks

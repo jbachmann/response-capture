@@ -7,6 +7,7 @@ process.env['PETSTORE_E2E_RUN_DIR'] ??= resolve(__dirname, 'test-results/catalog
 
 export default defineConfig({
   testDir: './e2e',
+  globalSetup: './e2e/global-setup.ts',
   outputDir: './test-results/playwright',
   fullyParallel: true,
   forbidOnly: !!process.env['CI'],
@@ -20,12 +21,14 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'catalog-setup', testMatch: /catalog\.setup\.ts/, retries: 0, timeout: 35_000 },
-    { name: 'harness', testMatch: /harness\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'harness',
+      testMatch: /(?:harness|loader)\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
     {
       name: 'chromium',
       testMatch: /pets\.spec\.ts/,
-      dependencies: ['catalog-setup'],
       use: { ...devices['Desktop Chrome'] },
     },
   ],

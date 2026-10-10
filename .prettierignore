@@ -11,3 +11,6 @@ apps/petstore-api/docs/catalog.json
 AGENTS.md
 apps/*/AGENTS.md
 **/.github/copilot-instructions.md
+
+**/test-results
+**/playwright-report

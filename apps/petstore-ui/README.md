@@ -108,13 +108,20 @@ catalog service elsewhere. Prefer commits in CI. Aliases can move, and the servi
 can replace a submission for the same commit; the saved snapshot records the
 exact payload used by each run. The UI command does not generate or submit catalogs.
 
-The setup project fetches `/catalogs/petstore-api` for latest, or
-`/catalogs/petstore-api/:selector` when a selector is supplied, once and validates the
-catalog with the shared contracts package, and saves it under
-`test-results/catalog/<run-id>/catalog.json`. Workers and retries read this snapshot.
-The HTML report includes the catalog, URL, selector (`null` for latest), SHA-256 digest, and request
-diagnostics. Failed browser tests retain screenshots and traces under
-`test-results/playwright`; open the report with:
+Playwright global setup starts a local snapshot loader. Before a test's hooks and
+body run, its declared catalog sources are fetched and validated with the shared
+contracts package. Each catalog API URL/system/selection combination is fetched
+once on first use; all workers and retries reuse that payload. Snapshots are saved
+under `test-results/catalog/<run-id>/<source-hash>.json`. Latest is resolved on
+first use of that source, rather than at suite discovery time. A new test run
+fetches fresh snapshots.
+
+Declarations are report annotations, including for skipped tests. The HTML report
+also includes each fetched snapshot, source name, system, requested selector
+(`null` for latest), URL, SHA-256 digest, and request diagnostics with phase numbers.
+The API returns catalog payloads without resolved commit metadata; the digest
+identifies the exact payload. Failed browser tests retain screenshots and traces
+under `test-results/playwright`; open the report with:
 
 ```sh
 npm exec --workspace=@response-capture/petstore-ui -- playwright show-report
@@ -122,48 +129,147 @@ npm exec --workspace=@response-capture/petstore-ui -- playwright show-report
 
 ### Authoring a journey
 
-Import `test` and `expect` from `e2e/support/fixtures`. Activate scenario IDs
-before navigation or the action that triggers an HTTP call:
+Import `test` and `expect` from `e2e/support/fixtures`. Declare the system, catalog
+selection, and named scenarios in the test. These responses are automatically
+active before `beforeEach` and the callback run; reading a handle never changes
+handlers.
 
 ```ts
 import type { PetInput } from '@response-capture/contracts/petstore';
-import { test, expect } from './support/fixtures';
+import { test, expect, catalogSelectionFromEnv } from './support/fixtures';
 
-test('create a pet', async ({ page, catalog, scenarios }) => {
-  const create = catalog.get('pet.create.success');
-  const input = create.request.body as unknown as PetInput;
-  scenarios.use(create.id, 'pet.read.after-order-deletion');
-  await page.goto('/pets/new');
-  await page.getByLabel('Name', { exact: true }).fill(input.name);
-  await page.getByLabel('Photo URLs (optional)').fill(input.photoUrls.join('\n'));
-  await page.getByRole('button', { name: 'Save pet' }).click();
-  await expect(page.getByRole('heading', { name: input.name, exact: true })).toBeVisible();
-  await expect(page.getByRole('status')).toHaveText('Pet saved.');
-  scenarios.assertUsed(create.id, 'pet.read.after-order-deletion');
-});
+test(
+  'create a pet',
+  {
+    catalogs: {
+      pets: { systemName: 'petstore-api', selection: catalogSelectionFromEnv() },
+    },
+    scenarios: {
+      create: { catalog: 'pets', id: 'pet.create.success' },
+      detail: { catalog: 'pets', id: 'pet.read.after-order-deletion' },
+    },
+  },
+  async ({ page, scenarios: { create, detail } }) => {
+    const input = create.request.body as unknown as PetInput;
+    await page.goto('/pets/new');
+    await page.getByLabel('Name', { exact: true }).fill(input.name);
+    await page.getByLabel('Photo URLs (optional)').fill(input.photoUrls.join('\n'));
+    await page.getByRole('button', { name: 'Save pet' }).click();
+    await expect(page.getByRole('heading', { name: input.name, exact: true })).toBeVisible();
+    await expect(page.getByRole('status')).toHaveText('Pet saved.');
+    expect(create.calls()[0]?.body).toMatchObject({ name: input.name });
+    detail.assertUsed();
+  },
+);
 ```
 
-`catalog.get(id)` returns an independent copy of the recording.
-`scenarios.use(...ids)` replaces the active responses without clearing previous
-request history. For example, after loading a detail page, select
-`pet.delete.success`, `pet.list.empty`, and `store.inventory.empty` before confirming
-deletion. Choose coherent recordings: `pet.read.after-order-deletion` currently
-matches the pet returned by `pet.create.success`, whereas `pet.read.success`
-describes a different sold variant.
+Editor completion exposes exactly the named handles. Each handle has `id`,
+`request`, `response`, `source`, `calls()`, and `assertUsed()`. Examples are copies
+of the recording. `source` identifies the declaration's catalog name plus the
+system, selector, URL, and digest. `calls()` returns independent copies of matched
+requests across phases for that catalog source and scenario ID. `assertUsed()`
+checks the handle's own phase; an earlier call cannot satisfy a new activation.
 
-Handlers match the UI origin, HTTP method, and recorded concrete path. Explicit
-`request.match.bodyContains` hints use the shared recursive subset matcher;
-request examples alone do not impose an exact payload constraint. Recorded response
-status, body, and content type are preserved, including empty 204 responses.
-`scenarios.calls(id)` returns matched request bodies and URLs across all phases;
-`scenarios.assertUsed(...ids)` allows immediate usage assertions.
+Use `{ latest: true }` to explicitly select latest or `{ selector: 'main' }` for
+an alias or commit. Explicit selections ignore `CATALOG_SELECTOR`.
+`catalogSelectionFromEnv()` is the opt-in helper used by the pet journeys: it reads
+that variable and defaults unset or blank values to latest. An optional
+`catalogApiUrl` on a source overrides `CATALOG_API_URL` for that source.
 
-Teardown fails for unused selections in any phase, body-hint failures, or unmatched
-`/pet`, `/store`, and `/training` requests. Those unmatched requests abort rather
-than reach a real API. Select at most one scenario per method/path in each phase.
-External image requests fail deterministically to exercise the photo fallback;
-same-origin application assets load normally. Each test gets its own browser
-context and handlers.
+For a later step, replace the entire active scenario set. Replacements return new
+named handles and keep the earlier request history:
+
+```ts
+// After a detail scenario has been exercised:
+const { remove } = mocks.replaceScenarios({
+  remove: { catalog: 'pets', id: 'pet.delete.success' },
+  list: { catalog: 'pets', id: 'pet.list.empty' },
+  inventory: { catalog: 'pets', id: 'store.inventory.empty' },
+});
+await page.getByRole('button', { name: 'Delete pet' }).click();
+await page.getByRole('button', { name: 'Confirm', exact: true }).click();
+await expect(page.getByRole('heading', { name: 'No pets yet' })).toBeVisible();
+remove.assertUsed();
+```
+
+Choose coherent recordings: `pet.read.after-order-deletion` currently matches the
+pet returned by `pet.create.success`, whereas `pet.read.success` describes a
+different sold variant. Catalogs contain exchanges from independent provider
+tests; the harness does not synthesize database state.
+
+Declare `scenarios: {}` for client-only validation and assert
+`expect(mocks.requests()).toEqual([])`. Declared systems' API paths remain guarded
+even when they have no active scenarios.
+
+### Adding another system or using multiple catalogs
+
+Register its routing in `e2e/support/systems.ts`. The registry defines routing,
+while each test declares its catalog selection. `'ui'` means the Playwright
+`baseURL` origin. Protected paths refer to the recorded paths before the prefix is
+applied; `'/'` protects the entire bound origin/prefix.
+
+```ts
+export const systems = {
+  'petstore-api': { origin: 'ui', protectedPaths: ['/pet', '/store', '/training'] },
+  'accounts-api': {
+    origin: 'ui',
+    pathPrefix: '/accounts',
+    protectedPaths: ['/account'],
+  },
+};
+```
+
+A test can also supply `catalogs.<name>.routing` to override the registry, including
+for a system not yet registered. A missing binding fails with registration
+instructions. Separate origins, such as `http://accounts.test`, are supported;
+the UI's request URLs must agree with the declared routing.
+
+```ts
+test(
+  'display the pet and account',
+  {
+    catalogs: {
+      pets: { systemName: 'petstore-api', selection: { latest: true } },
+      accounts: {
+        systemName: 'accounts-api',
+        selection: { selector: 'main' },
+        routing: { origin: 'ui', pathPrefix: '/accounts', protectedPaths: ['/account'] },
+      },
+    },
+    scenarios: {
+      pet: { catalog: 'pets', id: 'pet.read.success' },
+      account: { catalog: 'accounts', id: 'account.read.success' },
+    },
+  },
+  async ({ page, scenarios }) => {
+    // Trigger both requests using the application that integrates these systems.
+    // /pet/1 uses pets; /accounts/account/1 uses accounts when those are recorded paths.
+  },
+);
+```
+
+This illustrates declaration syntax; the callback must exercise both scenarios.
+Catalog names distinguish identical scenario IDs across sources. Multiple versions
+of the same system can also be declared, with distinct routing to avoid collisions.
+Scenario references and replacements must use a declared catalog name. Another
+system's catalog must use the existing shared scenario schema.
+
+Handlers match HTTP method and concrete URL after applying origin and prefix.
+Explicit `request.match.bodyContains` hints use the shared recursive subset
+matcher; request examples alone do not impose an exact payload constraint.
+Recorded response status, body, and content type are preserved, including empty
+204 responses. Teardown fails for unused activations in any phase, body-hint
+failures, or unmatched API requests. At most one active recording can handle a
+method/URL; collisions identify both sources and scenarios. Failed replacements
+leave the current handlers intact.
+
+Unmatched requests to a declared system's protected paths abort. External image
+requests fail deterministically to exercise the photo fallback; same-origin
+application assets load normally. Each test gets a fresh browser context and
+handlers. Ordinary `test.describe`, hooks, `test.use`, tags, grep filtering,
+`test.only`, `test.skip`, `test.fixme`, and `test.fail` remain available.
+The declaration wrapper preserves test source locations through a small bridge to
+the pinned Playwright version; run the acceptance checks when upgrading Playwright.
 
 The initial suite covers populated/empty lists, inventory, creation, required-name
 validation, missing pets, successful deletion, and deletion conflicts. Browser axe

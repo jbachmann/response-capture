@@ -94,3 +94,5 @@ npm run start:prod --workspace=catalog-api
 
 End-to-end tests require localhost sockets. Tests use isolated temporary or
 in-memory databases. No authentication is configured.
+
+`GET /` returns 404; the generated greeting endpoint has been removed.

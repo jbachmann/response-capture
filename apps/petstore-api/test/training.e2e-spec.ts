@@ -45,18 +45,11 @@ describe('training behavior (e2e)', () => {
       expect(pets.some((p: { id: number }) => p.id === order.petId)).toBe(true);
       orders.push(order);
     }
-    expect(orders.map((o) => o.status)).toEqual([
-      'placed',
-      'approved',
-      'delivered',
-    ]);
+    expect(orders.map((o) => o.status)).toEqual(['placed', 'approved', 'delivered']);
     expect(orders[2].complete).toBe(true);
     await api().get('/store/order/4').expect(404);
     await api().delete('/pet/1').expect(409);
-    await api()
-      .put('/pet')
-      .send({ id: 1, name: 'Changed', photoUrls: [] })
-      .expect(200);
+    await api().put('/pet').send({ id: 1, name: 'Changed', photoUrls: [] }).expect(200);
     await api().post('/pet').send(pet).expect(201);
     await api().post('/store/order').send({ petId: 7 }).expect(201);
     await recorder.recordScenario(
@@ -99,8 +92,7 @@ describe('training behavior (e2e)', () => {
         title: 'Clear the training database',
         category: 'Training',
         group: 'Clear the database',
-        description:
-          'After seeding, deletes all orders and pets and resets their ID sequences.',
+        description: 'After seeding, deletes all orders and pets and resets their ID sequences.',
         tags: [],
       },
     );
@@ -112,25 +104,19 @@ describe('training behavior (e2e)', () => {
         title: 'Clear an already empty database',
         category: 'Training',
         group: 'Clear the database',
-        description:
-          'Clearing a second time succeeds without requiring any existing records.',
+        description: 'Clearing a second time succeeds without requiring any existing records.',
         tags: ['repeatability', 'empty-results'],
       },
     );
     await fixture.reopen();
     await api().get('/pet').expect(200).expect([]);
-    await api()
-      .get('/store/inventory')
-      .expect(200)
-      .expect({ available: 0, pending: 0, sold: 0 });
+    await api().get('/store/inventory').expect(200).expect({ available: 0, pending: 0, sold: 0 });
     for (let id = 1; id <= 3; id++) {
       await api().get(`/store/order/${id}`).expect(404);
     }
     const created = (await api().post('/pet').send(pet).expect(201)).body;
     expect(created.id).toBe(1);
-    const order = (
-      await api().post('/store/order').send({ petId: created.id }).expect(201)
-    ).body;
+    const order = (await api().post('/store/order').send({ petId: created.id }).expect(201)).body;
     expect(order.id).toBe(1);
     await api().delete('/pet/1').expect(409);
     await recorder.flush();
@@ -138,16 +124,12 @@ describe('training behavior (e2e)', () => {
 
   it('rolls back a failed seed without losing original records or ID sequences', async () => {
     const existing = (await api().post('/pet').send(pet).expect(201)).body;
-    const order = (
-      await api().post('/store/order').send({ petId: existing.id }).expect(201)
-    ).body;
+    const order = (await api().post('/store/order').send({ petId: existing.id }).expect(201)).body;
     const db = fixture.app.get(DatabaseProvider).db;
     db.exec(
       "CREATE TEMP TRIGGER fail_seed BEFORE INSERT ON pets WHEN NEW.name = 'Luna' BEGIN SELECT RAISE(ABORT, 'Seed failure'); END",
     );
-    expect(() => fixture.app.get(TrainingService).seed()).toThrow(
-      'Seed failure',
-    );
+    expect(() => fixture.app.get(TrainingService).seed()).toThrow('Seed failure');
     db.exec('DROP TRIGGER fail_seed');
     await api().get('/pet').expect(200).expect([existing]);
     await api().get(`/store/order/${order.id}`).expect(200).expect(order);

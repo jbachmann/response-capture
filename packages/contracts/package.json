@@ -1,0 +1,29 @@
+{
+  "name": "@response-capture/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./scenarios": {
+      "types": "./dist/scenarios.d.ts",
+      "default": "./dist/scenarios.js"
+    },
+    "./catalog-api": {
+      "types": "./dist/catalog-api.d.ts",
+      "default": "./dist/catalog-api.js"
+    },
+    "./petstore": {
+      "types": "./dist/petstore.d.ts",
+      "default": "./dist/petstore.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  }
+}

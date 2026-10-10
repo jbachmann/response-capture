@@ -23,8 +23,7 @@ export async function mergeAndSubmitScenarios(
   const filename = await mergeScenarios(directory, diagnostic);
   diagnostic(`Wrote ${filename}`);
   const commitHash = await git('rev-parse', 'HEAD');
-  const alias =
-    process.env.CATALOG_ALIAS ?? (await git('branch', '--show-current'));
+  const alias = process.env.CATALOG_ALIAS ?? (await git('branch', '--show-current'));
   const catalog = JSON.parse(await readFile(filename, 'utf8')) as unknown;
   const baseUrl = process.env.CATALOG_API_URL ?? 'http://localhost:3001';
   const endpoint = `${baseUrl.replace(/\/+$/, '')}/catalog-submissions`;

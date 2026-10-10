@@ -1,14 +1,5 @@
-export type CatalogInventorySystemCatalog = {
-  commitHash: string;
-  alias?: string;
-  submittedOn: Date;
-};
-
-export type CatalogInventorySystem = {
-  name: string;
-  catalogs: CatalogInventorySystemCatalog[];
-};
-
-export type CatalogInventoryResponse = {
-  systems: CatalogInventorySystem[];
-};
+export type {
+  CatalogInventory as CatalogInventoryResponse,
+  CatalogSystem as CatalogInventorySystem,
+  CatalogVersion as CatalogInventorySystemCatalog,
+} from '@response-capture/contracts/catalog-api';

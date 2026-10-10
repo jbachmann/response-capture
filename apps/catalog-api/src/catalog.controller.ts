@@ -1,4 +1,9 @@
 import {
+  catalogInventorySchema,
+  catalogSubmissionsSchema,
+  catalogSubmissionSchema,
+} from './catalog-openapi.js';
+import {
   Body,
   Controller,
   Get,
@@ -27,9 +32,7 @@ import type { CatalogInventoryResponse } from './catalog-inventory.js';
 @Controller()
 @ApiTags('Catalogs')
 export class CatalogController {
-  constructor(
-    @Inject(CatalogRepository) private readonly catalogs: CatalogRepository,
-  ) {}
+  constructor(@Inject(CatalogRepository) private readonly catalogs: CatalogRepository) {}
 
   @Get('catalog-inventory')
   @ApiOperation({
@@ -38,36 +41,8 @@ export class CatalogController {
       'Lists systems by name and their catalog metadata newest first, without catalog payloads. Timestamp ties use submission sequence.',
   })
   @ApiOkResponse({
-    description:
-      'Available catalogs grouped by system. An empty database returns { systems: [] }.',
-    schema: {
-      type: 'object',
-      required: ['systems'],
-      properties: {
-        systems: {
-          type: 'array',
-          items: {
-            type: 'object',
-            required: ['name', 'catalogs'],
-            properties: {
-              name: { type: 'string', example: 'provider' },
-              catalogs: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  required: ['commitHash', 'submittedOn'],
-                  properties: {
-                    commitHash: { type: 'string', example: 'example-commit' },
-                    alias: { type: 'string', example: 'main' },
-                    submittedOn: { type: 'string', format: 'date-time' },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
+    description: 'Available catalogs grouped by system. An empty database returns { systems: [] }.',
+    schema: catalogInventorySchema,
   })
   inventory(): CatalogInventoryResponse {
     return this.catalogs.inventory();
@@ -80,22 +55,8 @@ export class CatalogController {
       'Returns all stored submissions, newest first. Timestamp ties are resolved by submission sequence. An empty database returns an empty array.',
   })
   @ApiOkResponse({
-    description:
-      'Stored submissions with catalog payloads and submission timestamps.',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        required: ['systemName', 'commitHash', 'catalog', 'submittedAt'],
-        properties: {
-          systemName: { type: 'string', example: 'provider' },
-          commitHash: { type: 'string', example: 'example-commit' },
-          alias: { type: 'string', example: 'main' },
-          catalog: { type: 'object', additionalProperties: true },
-          submittedAt: { type: 'string', format: 'date-time' },
-        },
-      },
-    },
+    description: 'Stored submissions with catalog payloads and submission timestamps.',
+    schema: catalogSubmissionsSchema,
   })
   list(): StoredCatalogSubmission[] {
     return this.catalogs.list();
@@ -110,24 +71,7 @@ export class CatalogController {
   })
   @ApiBody({
     required: true,
-    schema: {
-      type: 'object',
-      required: ['systemName', 'commitHash', 'catalog'],
-      properties: {
-        systemName: { type: 'string', pattern: '\\S', example: 'provider' },
-        commitHash: {
-          type: 'string',
-          pattern: '\\S',
-          example: 'example-commit',
-        },
-        alias: { type: 'string', example: 'main' },
-        catalog: {
-          type: 'object',
-          additionalProperties: true,
-          example: { catalogVersion: 1, scenarios: [] },
-        },
-      },
-    },
+    schema: catalogSubmissionSchema,
   })
   @ApiNoContentResponse({ description: 'Catalog stored successfully.' })
   @ApiBadRequestResponse({ description: 'Invalid submission.' })
@@ -176,8 +120,7 @@ export class CatalogController {
 
   private find(systemName: string, selector?: string): Record<string, unknown> {
     const catalog = this.catalogs.latest(systemName, selector);
-    if (catalog === undefined)
-      throw new NotFoundException('No matching catalog submission');
+    if (catalog === undefined) throw new NotFoundException('No matching catalog submission');
     return catalog;
   }
 }

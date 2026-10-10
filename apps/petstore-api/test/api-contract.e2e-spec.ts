@@ -51,8 +51,7 @@ describe('API contract (e2e)', () => {
         title: 'Read a missing pet at the maximum safe ID',
         category: 'Pets',
         group: 'Read a pet',
-        description:
-          'The largest safe integer is a valid ID, but no pet with that ID exists.',
+        description: 'The largest safe integer is a valid ID, but no pet with that ID exists.',
         tags: ['boundary-values'],
       },
     );
@@ -64,8 +63,7 @@ describe('API contract (e2e)', () => {
         title: 'Read a missing order at the maximum safe ID',
         category: 'Orders',
         group: 'Read an order',
-        description:
-          'The largest safe integer is a valid ID, but no order with that ID exists.',
+        description: 'The largest safe integer is a valid ID, but no order with that ID exists.',
         tags: ['boundary-values'],
       },
     );
@@ -80,9 +78,7 @@ describe('API contract (e2e)', () => {
     await api().get('/docs/swagger-ui-init.js').expect(200);
     const document = (await api().get('/docs-json').expect(200)).body;
     const schemas = document.components.schemas;
-    expect(schemas.CreatePetDto.required).toEqual(
-      expect.arrayContaining(['name', 'photoUrls']),
-    );
+    expect(schemas.CreatePetDto.required).toEqual(expect.arrayContaining(['name', 'photoUrls']));
     expect(schemas.CreatePetDto.properties).not.toHaveProperty('id');
     expect(schemas.UpdatePetDto.required).toContain('id');
     expect(schemas.PetDto.required).toEqual(
@@ -91,37 +87,30 @@ describe('API contract (e2e)', () => {
     expect(schemas.CreatePetDto.properties.category).toEqual({
       $ref: '#/components/schemas/CategoryDto',
     });
-    expect(schemas.CreatePetDto.properties.tags.items.$ref).toBe(
-      '#/components/schemas/TagDto',
-    );
+    expect(schemas.CreatePetDto.properties.tags.items.$ref).toBe('#/components/schemas/TagDto');
     expect(schemas.CreateOrderDto.required).toEqual(['petId']);
     expect(schemas.OrderDto.required).toEqual(
       expect.arrayContaining(['id', 'petId', 'quantity', 'status', 'complete']),
     );
     expect(schemas.InventoryDto.required).toHaveLength(3);
-    expect(
-      document.paths['/pet'].post.requestBody.content['application/json'].schema
-        .$ref,
-    ).toBe('#/components/schemas/CreatePetDto');
-    expect(
-      document.paths['/pet'].post.responses['201'].content['application/json']
-        .schema.$ref,
-    ).toBe('#/components/schemas/PetDto');
-    expect(document.paths['/pet/{petId}'].delete.responses).toHaveProperty(
-      '409',
+    expect(document.paths['/pet'].post.requestBody.content['application/json'].schema.$ref).toBe(
+      '#/components/schemas/CreatePetDto',
     );
+    expect(
+      document.paths['/pet'].post.responses['201'].content['application/json'].schema.$ref,
+    ).toBe('#/components/schemas/PetDto');
+    expect(document.paths['/pet/{petId}'].delete.responses).toHaveProperty('409');
     expect(document.paths['/store/order'].post.responses).toHaveProperty('404');
+    expect(document.paths['/pet/findByStatus'].get.parameters[0].schema.items.enum).toEqual([
+      'available',
+      'pending',
+      'sold',
+    ]);
     expect(
-      document.paths['/pet/findByStatus'].get.parameters[0].schema.items.enum,
-    ).toEqual(['available', 'pending', 'sold']);
-    expect(
-      document.paths['/training/seed'].post.responses['200'].content[
-        'application/json'
-      ].schema.$ref,
+      document.paths['/training/seed'].post.responses['200'].content['application/json'].schema
+        .$ref,
     ).toBe('#/components/schemas/SeedResultDto');
-    expect(
-      document.paths['/training/database'].delete.responses,
-    ).toHaveProperty('204');
+    expect(document.paths['/training/database'].delete.responses).toHaveProperty('204');
     expect(document.paths).not.toHaveProperty('/user');
   });
 });

@@ -1,10 +1,5 @@
 import { Controller, Delete, HttpCode, Post } from '@nestjs/common';
-import {
-  ApiNoContentResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiNoContentResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SeedResultDto } from './training.dto.js';
 import { TrainingService } from './training.service.js';
 

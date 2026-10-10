@@ -54,20 +54,15 @@ describe('merge submission', () => {
     expect(mocks.git).toHaveBeenCalledWith('git', ['rev-parse', 'HEAD']);
   });
 
-  it.each(['release', ''])(
-    'honors explicit alias override %j',
-    async (alias) => {
-      vi.stubEnv('CATALOG_ALIAS', alias);
-      vi.stubEnv('CATALOG_API_URL', 'https://catalog.example');
-      await mergeAndSubmitScenarios(directory, () => undefined);
-      const payload = JSON.parse(mocks.fetch.mock.calls[0][1].body);
-      expect(payload.alias).toBe(alias || undefined);
-      expect(mocks.git).toHaveBeenCalledTimes(1);
-      expect(mocks.fetch.mock.calls[0][0]).toBe(
-        'https://catalog.example/catalog-submissions',
-      );
-    },
-  );
+  it.each(['release', ''])('honors explicit alias override %j', async (alias) => {
+    vi.stubEnv('CATALOG_ALIAS', alias);
+    vi.stubEnv('CATALOG_API_URL', 'https://catalog.example');
+    await mergeAndSubmitScenarios(directory, () => undefined);
+    const payload = JSON.parse(mocks.fetch.mock.calls[0][1].body);
+    expect(payload.alias).toBe(alias || undefined);
+    expect(mocks.git).toHaveBeenCalledTimes(1);
+    expect(mocks.fetch.mock.calls[0][0]).toBe('https://catalog.example/catalog-submissions');
+  });
 
   it('omits alias on detached HEAD and uses the default API URL', async () => {
     vi.stubEnv('CATALOG_API_URL', undefined);
@@ -75,49 +70,40 @@ describe('merge submission', () => {
       args[0] === 'rev-parse' ? 'a'.repeat(40) : '',
     );
     await mergeAndSubmitScenarios(directory, () => undefined);
-    expect(JSON.parse(mocks.fetch.mock.calls[0][1].body)).not.toHaveProperty(
-      'alias',
-    );
-    expect(mocks.fetch.mock.calls[0][0]).toBe(
-      'http://localhost:3001/catalog-submissions',
-    );
+    expect(JSON.parse(mocks.fetch.mock.calls[0][1].body)).not.toHaveProperty('alias');
+    expect(mocks.fetch.mock.calls[0][0]).toBe('http://localhost:3001/catalog-submissions');
   });
 
-  it.each([
-    new Error('connection refused'),
-    new DOMException('Timed out', 'TimeoutError'),
-  ])('retains the file on transport failure: %s', async (error) => {
-    mocks.fetch.mockRejectedValue(error);
-    await expect(
-      mergeAndSubmitScenarios(directory, () => undefined),
-    ).rejects.toThrow(/Local catalog remains/);
-    expect(
-      JSON.parse(await readFile(join(directory, 'catalog.json'), 'utf8')),
-    ).toEqual({ catalogVersion: 1, scenarios: [] });
-  });
+  it.each([new Error('connection refused'), new DOMException('Timed out', 'TimeoutError')])(
+    'retains the file on transport failure: %s',
+    async (error) => {
+      mocks.fetch.mockRejectedValue(error);
+      await expect(mergeAndSubmitScenarios(directory, () => undefined)).rejects.toThrow(
+        /Local catalog remains/,
+      );
+      expect(JSON.parse(await readFile(join(directory, 'catalog.json'), 'utf8'))).toEqual({
+        catalogVersion: 1,
+        scenarios: [],
+      });
+    },
+  );
 
   it('reports rejected HTTP submissions and retains the local file', async () => {
-    mocks.fetch.mockResolvedValue(
-      new Response('Invalid submission', { status: 400 }),
+    mocks.fetch.mockResolvedValue(new Response('Invalid submission', { status: 400 }));
+    await expect(mergeAndSubmitScenarios(directory, () => undefined)).rejects.toThrow(
+      /HTTP 400: Invalid submission/,
     );
-    await expect(
-      mergeAndSubmitScenarios(directory, () => undefined),
-    ).rejects.toThrow(/HTTP 400: Invalid submission/);
-    await expect(
-      readFile(join(directory, 'catalog.json')),
-    ).resolves.toBeDefined();
+    await expect(readFile(join(directory, 'catalog.json'))).resolves.toBeDefined();
   });
 
   it('fails on Git resolution errors before submitting and retains the file', async () => {
     mocks.git.mockImplementation(() => {
       throw new Error('no HEAD');
     });
-    await expect(
-      mergeAndSubmitScenarios(directory, () => undefined),
-    ).rejects.toThrow(/Cannot resolve Git/);
+    await expect(mergeAndSubmitScenarios(directory, () => undefined)).rejects.toThrow(
+      /Cannot resolve Git/,
+    );
     expect(mocks.fetch).not.toHaveBeenCalled();
-    await expect(
-      readFile(join(directory, 'catalog.json')),
-    ).resolves.toBeDefined();
+    await expect(readFile(join(directory, 'catalog.json'))).resolves.toBeDefined();
   });
 });

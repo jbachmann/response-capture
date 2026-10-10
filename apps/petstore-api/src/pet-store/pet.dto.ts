@@ -1,3 +1,4 @@
+import type { Pet, NamedEntity } from '@response-capture/contracts/petstore';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
@@ -21,7 +22,7 @@ export enum PetStatus {
   Sold = 'sold',
 }
 
-export class CategoryDto {
+export class CategoryDto implements NamedEntity {
   @ApiPropertyOptional({
     type: 'integer',
     minimum: 1,
@@ -85,7 +86,7 @@ export class UpdatePetDto extends CreatePetDto {
   id: number;
 }
 
-export class PetDto {
+export class PetDto implements Pet {
   @ApiProperty()
   name: string;
 

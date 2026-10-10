@@ -54,16 +54,12 @@ export class OrderRepository {
   }
 
   findOne(id: number): OrderDto | undefined {
-    const row = this.database.db
-      .prepare('SELECT * FROM orders WHERE id = ?')
-      .get(id) as OrderRow | undefined;
+    const row = this.database.db.prepare('SELECT * FROM orders WHERE id = ?').get(id) as
+      OrderRow | undefined;
     return row ? orderFromRow(row) : undefined;
   }
 
   delete(id: number): boolean {
-    return Boolean(
-      this.database.db.prepare('DELETE FROM orders WHERE id = ?').run(id)
-        .changes,
-    );
+    return Boolean(this.database.db.prepare('DELETE FROM orders WHERE id = ?').run(id).changes);
   }
 }

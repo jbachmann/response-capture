@@ -124,10 +124,8 @@ it('creates a pet', async () => {
       path: '/pets',
       body: { name: 'Fido', species: 'DOG' },
     },
-    () => request(app.getHttpServer())
-      .post('/pets')
-      .send({ name: 'Fido', species: 'DOG' })
-      .expect(201),
+    () =>
+      request(app.getHttpServer()).post('/pets').send({ name: 'Fido', species: 'DOG' }).expect(201),
     {
       description: 'Creates a dog',
       requestMatch: { bodyContains: { species: 'DOG' } },

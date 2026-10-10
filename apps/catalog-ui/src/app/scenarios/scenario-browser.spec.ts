@@ -10,7 +10,7 @@ import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../app.routes';
 import { example, synthetic } from './catalog.fixtures';
-import { parseCatalog, Scenario } from './catalog';
+import { parseCatalog, type Scenario } from '@response-capture/contracts/scenarios';
 
 @Component({
   template: '<p>Test destination</p>',

@@ -350,6 +350,41 @@ describe('petstore', () => {
     );
     expect(text()).toContain('Check your connection');
   });
+  it.each([
+    ['/pets/1', '/pets/2', '/pet/1', '/pet/2', { ...pet, id: 2 }, 'Milo'],
+    ['/orders/3', '/orders/4', '/store/order/3', '/store/order/4', { ...order, id: 4 }, 'Order #4'],
+  ] as const)(
+    'cancels a pending retry when navigating from %s',
+    async (initial, next, initialApi, nextApi, record, expected) => {
+      await harness.navigateByUrl(initial);
+      http.expectOne(initialApi).flush({}, { status: 500, statusText: 'Error' });
+      await settle();
+      await click('Try again');
+      const retry = http.expectOne(initialApi);
+      await harness.navigateByUrl(next);
+      expect(retry.cancelled).toBe(true);
+      http.expectOne(nextApi).flush(record);
+      await settle();
+      expect(text()).toContain(expected);
+    },
+  );
+
+  it('shows order-specific guidance after a relationship conflict', async () => {
+    await harness.navigateByUrl('/pets/1');
+    http.expectOne('/pet/1').flush(pet);
+    await settle();
+    await click('Place order');
+    await click('Place order');
+    http.expectOne('/pet/1').flush(pet);
+    http.expectOne('/store/order').flush({}, { status: 409, statusText: 'Conflict' });
+    await settle();
+    expect(text()).toContain('changed while the order was being placed');
+    expect(text()).not.toContain('Delete its referencing orders');
+    expect(
+      root().querySelector<HTMLInputElement>('input[formcontrolname=quantity]')!.disabled,
+    ).toBe(false);
+  });
+
   it('uses exact relative API routes for all operations', () => {
     const api = TestBed.inject(PetstoreApiService);
     api.pets().subscribe();

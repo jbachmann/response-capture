@@ -1,3 +1,4 @@
+import type { SeedResult } from '@response-capture/contracts/petstore';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Inventory, Order, OrderInput, Pet, PetInput, PetStatus } from './models';
@@ -43,17 +44,21 @@ export class PetstoreApiService {
     return this.http.delete<void>(`/store/order/${id}`);
   }
   seed() {
-    return this.http.post<{ pets: number; orders: number; inventory: Inventory }>(
-      '/training/seed',
-      null,
-    );
+    return this.http.post<SeedResult>('/training/seed', null);
   }
 }
-export function errorMessage(error: unknown): string {
+export function errorMessage(error: unknown, operation?: 'delete-pet' | 'create-order'): string {
   if (error instanceof HttpErrorResponse) {
     if (error.status === 404) return 'This record could not be found. It may have been deleted.';
-    if (error.status === 409)
-      return 'This pet has an order. Delete its referencing orders before deleting the pet.';
+    if (error.status === 409) {
+      if (operation === 'delete-pet') {
+        return 'This pet has an order. Delete its referencing orders before deleting the pet.';
+      }
+      if (operation === 'create-order') {
+        return 'This pet changed while the order was being placed. Refresh its details and try again.';
+      }
+      return 'The record changed while the request was being processed. Refresh and try again.';
+    }
     if (error.status === 400) return 'Check your entries and try again.';
   }
   return 'We could not complete the request. Check your connection and try again.';

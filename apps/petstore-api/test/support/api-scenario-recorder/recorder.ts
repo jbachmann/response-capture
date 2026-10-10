@@ -3,17 +3,8 @@ import type { Response, Test } from 'supertest';
 import type { App } from 'supertest/types.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
-import {
-  isJsonContentType,
-  validateRequest,
-  validateScenario,
-} from './schema.js';
-import type {
-  Json,
-  RequestExample,
-  Scenario,
-  ScenarioMetadata,
-} from './schema.js';
+import { isJsonContentType, validateRequest, validateScenario } from './schema.js';
+import type { Json, RequestExample, Scenario, ScenarioMetadata } from './schema.js';
 import { atomicWrite, compareIds } from './writer.js';
 
 /** Only expectations and awaiting are exposed; callers cannot mutate the request. */
@@ -27,13 +18,8 @@ export interface ScenarioTest extends PromiseLike<Response> {
 function expectations(test: Test): ScenarioTest {
   const wrapper: ScenarioTest = {
     expect(...args: unknown[]) {
-      if (
-        args.length > 2 ||
-        (args.length === 2 && typeof args[1] === 'function')
-      ) {
-        throw new Error(
-          'Use awaited expectations; callback-style .expect() is unsupported',
-        );
+      if (args.length > 2 || (args.length === 2 && typeof args[1] === 'function')) {
+        throw new Error('Use awaited expectations; callback-style .expect() is unsupported');
       }
       (test.expect as (...args: unknown[]) => Test)(...args);
       return wrapper;
@@ -51,14 +37,8 @@ function snapshotRequest(example: RequestExample, id: string): RequestExample {
   return snapshot;
 }
 
-function createManagedRequest(
-  app: App,
-  snapshot: RequestExample,
-  hasBody: boolean,
-): Test {
-  const test = new request.Test(app, snapshot.method, snapshot.path).redirects(
-    0,
-  );
+function createManagedRequest(app: App, snapshot: RequestExample, hasBody: boolean): Test {
+  const test = new request.Test(app, snapshot.method, snapshot.path).redirects(0);
   if (hasBody) {
     test.type('json').send(JSON.stringify(snapshot.body));
   }
@@ -98,14 +78,8 @@ export function createScenarioRecorder(options: {
   if (!options.suiteId.trim()) {
     throw new Error('suiteId must be nonempty');
   }
-  const suite = createHash('sha256')
-    .update(options.suiteId)
-    .digest('hex')
-    .slice(0, 20);
-  const outputFile = join(
-    options.outputDirectory,
-    `${suite}-${randomUUID()}.scenarios.json`,
-  );
+  const suite = createHash('sha256').update(options.suiteId).digest('hex').slice(0, 20);
+  const outputFile = join(options.outputDirectory, `${suite}-${randomUUID()}.scenarios.json`);
   const scenarios = new Map<string, Scenario>();
   const pendingIds = new Set<string>();
   let sealed = false;
@@ -132,22 +106,16 @@ export function createScenarioRecorder(options: {
       const example: RequestExample = {
         ...descriptor,
         body: descriptor.body === undefined ? null : descriptor.body,
-        ...(metadata.requestMatch === undefined
-          ? {}
-          : { match: metadata.requestMatch }),
+        ...(metadata.requestMatch === undefined ? {} : { match: metadata.requestMatch }),
       };
       const candidate = {
         schemaVersion: 1,
         id,
         ...(metadata.title === undefined ? {} : { title: metadata.title }),
-        ...(metadata.category === undefined
-          ? {}
-          : { category: metadata.category }),
+        ...(metadata.category === undefined ? {} : { category: metadata.category }),
         ...(metadata.group === undefined ? {} : { group: metadata.group }),
         ...(metadata.tags === undefined ? {} : { tags: metadata.tags }),
-        ...(metadata.description === undefined
-          ? {}
-          : { description: metadata.description }),
+        ...(metadata.description === undefined ? {} : { description: metadata.description }),
         request: example,
         response: { status: 200, body: null },
       };
@@ -156,11 +124,7 @@ export function createScenarioRecorder(options: {
       const snapshot = snapshotRequest(example, id);
       pendingIds.add(id);
       try {
-        const test = createManagedRequest(
-          options.app,
-          snapshot,
-          descriptor.body !== undefined,
-        );
+        const test = createManagedRequest(options.app, snapshot, descriptor.body !== undefined);
         const response = await assert(expectations(test));
         // Always await the managed interaction even if the callback returned another response.
         const observed = await test;
@@ -191,9 +155,7 @@ export function createScenarioRecorder(options: {
         return flushing;
       }
       if (pendingIds.size) {
-        return Promise.reject(
-          new Error('Await all recordScenario calls before flush()'),
-        );
+        return Promise.reject(new Error('Await all recordScenario calls before flush()'));
       }
       sealed = true;
       flushing = (async () => {

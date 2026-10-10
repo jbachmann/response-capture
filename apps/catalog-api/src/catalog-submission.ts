@@ -1,19 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
 
-export interface CatalogSubmission {
-  systemName: string;
-  commitHash: string;
-  alias?: string;
-  catalog: Record<string, unknown>;
-}
+import type { CatalogSubmission } from '@response-capture/contracts/catalog-api';
+export type {
+  CatalogSubmission,
+  StoredCatalogSubmission,
+} from '@response-capture/contracts/catalog-api';
 
-export interface StoredCatalogSubmission extends CatalogSubmission {
-  submittedAt: string;
-}
-
-export function validateSubmission(
-  value: unknown,
-): asserts value is CatalogSubmission {
+export function validateSubmission(value: unknown): asserts value is CatalogSubmission {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new BadRequestException('Submission must be a JSON object');
   }

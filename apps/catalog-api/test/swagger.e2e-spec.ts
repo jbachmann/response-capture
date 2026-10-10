@@ -29,21 +29,16 @@ describe('Swagger documentation', () => {
       .get('/docs/swagger-ui-bundle.js')
       .expect(200)
       .expect('Content-Type', /javascript/);
-    const init = await request(app.getHttpServer())
-      .get('/docs/swagger-ui-init.js')
-      .expect(200);
+    const init = await request(app.getHttpServer()).get('/docs/swagger-ui-init.js').expect(200);
     expect(init.text).toContain('/catalog-submissions');
   });
 
   it('documents submission requirements, parameters, and responses', async () => {
-    const { body: document } = await request(app.getHttpServer())
-      .get('/docs-json')
-      .expect(200);
+    const { body: document } = await request(app.getHttpServer()).get('/docs-json').expect(200);
     expect(document.info.title).toBe('Catalog API');
+    expect(document.paths['/']).toBeUndefined();
     const inventory =
-      document.paths['/catalog-inventory'].get.responses['200'].content[
-        'application/json'
-      ].schema;
+      document.paths['/catalog-inventory'].get.responses['200'].content['application/json'].schema;
     expect(inventory.required).toEqual(['systems']);
     expect(inventory.properties.systems.type).toBe('array');
     const system = inventory.properties.systems.items;
@@ -81,16 +76,9 @@ describe('Swagger documentation', () => {
       type: 'object',
       additionalProperties: true,
     });
-    expect(Object.keys(submission.responses).sort()).toEqual([
-      '204',
-      '400',
-      '413',
-    ]);
+    expect(Object.keys(submission.responses).sort()).toEqual(['204', '400', '413']);
     expect(submission.responses['204'].content).toBeUndefined();
-    for (const path of [
-      '/catalogs/{systemName}',
-      '/catalogs/{systemName}/{selector}',
-    ]) {
+    for (const path of ['/catalogs/{systemName}', '/catalogs/{systemName}/{selector}']) {
       const operation = document.paths[path].get;
       expect(operation.parameters).toContainEqual(
         expect.objectContaining({
@@ -100,22 +88,15 @@ describe('Swagger documentation', () => {
           schema: expect.objectContaining({ type: 'string' }),
         }),
       );
-      expect(
-        operation.responses['200'].content['application/json'].schema,
-      ).toEqual({
+      expect(operation.responses['200'].content['application/json'].schema).toEqual({
         type: 'object',
         additionalProperties: true,
       });
       expect(operation.responses['404']).toBeDefined();
     }
-    expect(
-      document.paths['/catalogs/{systemName}/{selector}'].get.parameters,
-    ).toContainEqual(
+    expect(document.paths['/catalogs/{systemName}/{selector}'].get.parameters).toContainEqual(
       expect.objectContaining({ name: 'selector', in: 'path', required: true }),
     );
-    await request(app.getHttpServer())
-      .get('/docs-yaml')
-      .expect(200)
-      .expect('Content-Type', /yaml/);
+    await request(app.getHttpServer()).get('/docs-yaml').expect(200).expect('Content-Type', /yaml/);
   });
 });

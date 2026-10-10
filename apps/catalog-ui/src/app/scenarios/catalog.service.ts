@@ -1,23 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map } from 'rxjs';
-import { parseCatalog } from './catalog';
+import { parseCatalog } from '@response-capture/contracts/scenarios';
 
-export interface CatalogVersion {
-  commitHash: string;
-  alias?: string;
-  submittedOn: string;
-}
-
-export interface CatalogSystem {
-  name: string;
-  catalogs: CatalogVersion[];
-}
-
-export interface CatalogInventory {
-  systems: CatalogSystem[];
-}
-
+export type {
+  CatalogVersion,
+  CatalogSystem,
+  CatalogInventory,
+} from '@response-capture/contracts/catalog-api';
+import type { CatalogInventory } from '@response-capture/contracts/catalog-api';
 @Injectable({ providedIn: 'root' })
 export class CatalogService {
   private readonly http = inject(HttpClient);

@@ -100,7 +100,26 @@ For machines with limited resources, use `NG_BUILD_MAX_WORKERS=2 npm run build`
 - [apps/petstore-ui](apps/petstore-ui/README.md): Angular UI and its local development instructions.
 - [apps/catalog-api](apps/catalog-api/README.md): NestJS catalog API.
 - [apps/catalog-ui](apps/catalog-ui/README.md): Angular Scenario library.
-- `packages/*`: reserved workspace pattern for future shared libraries; no shared package exists yet.
+- `packages/contracts`: browser-safe wire types and scenario validation, compiled to ESM.
+- `packages/ui`: Angular theme and route-focus code, plus common CSS; compiled by each UI.
 
-Future shared contracts should expose browser-safe types rather than decorated
-Nest DTOs. Each application's TypeScript configuration remains independent.
+Shared contracts expose browser-safe types; decorated Nest DTOs remain in the APIs.
+The contracts package uses TypeScript 5.9 for compatibility with both UI compilers.
+Each application's TypeScript configuration remains independent. Both development
+servers exclude shared Angular source entrypoints from Vite prebundling so Angular
+compiles their decorators; see [Angular's prebundling guidance](https://angular.dev/tools/cli/build-system-migration#prebundling). `npm ci` builds
+contracts through the root prepare script. Root Turbo commands build dependencies
+before application tasks; during combined development contracts run a compiler watcher.
+
+Formatting uses the root Prettier configuration. Run `npm run format:check` or
+`npm run format` from the root.
+
+## Compatibility changes
+
+Both APIs now return 404 for `GET /`; the generated greeting endpoints were removed.
+Use a documented feature route to verify connectivity. Catalog browsing and recording
+share strict version 1 validation: unknown schema fields, duplicate IDs, and matching
+hints inconsistent with their request body are rejected. Legacy scenarios without
+metadata remain valid. The catalog storage API still accepts arbitrary JSON objects.
+Stored payloads and SQLite schemas are unchanged; fix invalid scenario data at its
+source and submit a corrected catalog rather than modifying stored records in place.

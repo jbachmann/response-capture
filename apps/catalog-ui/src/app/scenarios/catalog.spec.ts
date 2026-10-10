@@ -1,12 +1,11 @@
+import { parseCatalog, type Scenario } from '@response-capture/contracts/scenarios';
 import {
   emptyFilters,
   filterScenarios,
   groupScenarios,
   normalizeFilters,
-  options,
-  parseCatalog,
-  Scenario,
-} from './catalog';
+  filterOptions,
+} from './scenario-filters';
 
 import { example, synthetic } from './catalog.fixtures';
 
@@ -27,6 +26,15 @@ describe('dynamic catalog model', () => {
     { catalogVersion: 1, scenarios: [example('a'), example('a')] },
     ...[
       { title: ' ' },
+      { extra: true },
+      {
+        request: {
+          method: 'GET',
+          path: '/a',
+          body: { name: 'observed' },
+          match: { bodyContains: { name: 'different' } },
+        },
+      },
       { category: 4 },
       { group: null },
       { tags: ['a', 'a'] },
@@ -41,14 +49,14 @@ describe('dynamic catalog model', () => {
     expect(() => parseCatalog(value)).toThrow(),
   );
   it('discovers arbitrary metadata and statuses, and scopes groups by category', () => {
-    expect(options(synthetic, 'Weather')).toEqual({
+    expect(filterOptions(synthetic, 'Weather')).toEqual({
       categories: ['Astronomy', 'Weather'],
       groups: ['Launch'],
       tags: ['day', 'night'],
       statuses: ['201'],
     });
     expect(
-      options([
+      filterOptions([
         example('new', {
           category: 'Shipping',
           group: 'Dispatch',

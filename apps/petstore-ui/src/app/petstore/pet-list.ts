@@ -18,6 +18,7 @@ import { Inventory, Pet, PetStatus } from './models';
 import { errorMessage, PetstoreApiService } from './petstore-api.service';
 import { PetPhoto } from './pet-photo';
 import { Confirmation } from './confirmation';
+
 @Component({
   selector: 'app-pet-list',
   imports: [RouterLink, ReactiveFormsModule, PetPhoto, Confirmation],
@@ -50,17 +51,21 @@ export class PetList {
     this.confirmSeed.set(false);
     this.seedButton()?.nativeElement.focus();
   }
+
   protected readonly visible = computed(() =>
-    this.pets().filter((p) => p.name.toLowerCase().includes(this.search().toLowerCase().trim())),
+    this.pets().filter((pet) =>
+      pet.name.toLowerCase().includes(this.search().toLowerCase().trim()),
+    ),
   );
   protected readonly emptyDatabase = computed(() => {
-    const i = this.inventory();
-    return i !== null && i.available + i.pending + i.sold === 0;
+    const inventory = this.inventory();
+    return inventory !== null && inventory.available + inventory.pending + inventory.sold === 0;
   });
+
   constructor() {
     this.filters.controls.name.valueChanges
       .pipe(takeUntilDestroyed())
-      .subscribe((v) => this.search.set(v));
+      .subscribe((name) => this.search.set(name));
     this.filters.controls.status.valueChanges
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.refresh.next());
@@ -74,19 +79,7 @@ export class PetList {
         }),
         switchMap(() => {
           const { status, tag } = this.filters.getRawValue();
-          const pets =
-            status && tag.trim()
-              ? forkJoin([this.api.byStatus(status), this.api.byTag(tag.trim())]).pipe(
-                  map(([a, b]) => {
-                    const ids = new Set(b.map((p) => p.id));
-                    return a.filter((p) => ids.has(p.id));
-                  }),
-                )
-              : status
-                ? this.api.byStatus(status)
-                : tag.trim()
-                  ? this.api.byTag(tag.trim())
-                  : this.api.pets();
+          const pets = this.loadMatchingPets(status, tag.trim());
           return forkJoin({ pets, inventory: this.api.inventory() }).pipe(
             catchError((e) => {
               this.error.set(errorMessage(e));
@@ -104,11 +97,27 @@ export class PetList {
         this.loading.set(false);
       });
   }
+
+  private loadMatchingPets(status: PetStatus | '', tag: string) {
+    if (status && tag) {
+      return forkJoin([this.api.byStatus(status), this.api.byTag(tag)]).pipe(
+        map(([statusMatches, tagMatches]) => {
+          const matchingIds = new Set(tagMatches.map((pet) => pet.id));
+          return statusMatches.filter((pet) => matchingIds.has(pet.id));
+        }),
+      );
+    }
+    if (status) return this.api.byStatus(status);
+    if (tag) return this.api.byTag(tag);
+    return this.api.pets();
+  }
+
   protected clear() {
     this.filters.reset({ name: '', status: '', tag: '' }, { emitEvent: false });
     this.search.set('');
     this.refresh.next();
   }
+
   protected seed() {
     if (this.seeding()) return;
     this.seeding.set(true);

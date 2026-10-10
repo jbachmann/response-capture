@@ -18,7 +18,11 @@ it('creates a pet', async () => {
     async (test) => {
       const response = await test.expect(201);
       expect(response.body).toEqual({
-        id: 1, name: 'Milo', photoUrls: [], tags: [], status: 'available',
+        id: 1,
+        name: 'Milo',
+        photoUrls: [],
+        tags: [],
+        status: 'available',
       });
       return response;
     },
@@ -66,7 +70,7 @@ Supported methods are GET, POST, PUT, PATCH, DELETE, HEAD and OPTIONS. Paths
 must be concrete relative pathnames such as `/pet/123`, with no origin, query,
 fragment or `/pet/:id` template. Percent-encode non-ASCII characters and other
 characters outside URI pathname syntax. Version 1 does not model queries. The
-`schema.ts` file is the authoritative runtime schema and type definition.
+`@response-capture/contracts/scenarios` entrypoint owns the runtime schema and types.
 Each scenario uses `schemaVersion: 1`; suite files and the merged catalog use
 `{ "catalogVersion": 1, "scenarios": [...] }`. The merger also accepts files
 containing a single scenario. Unknown fields, versions, unsupported data,
@@ -95,8 +99,8 @@ npm run scenarios:merge -- /path/to/recordings
 ```
 
 The merge command compiles just its test-support TypeScript into gitignored
-`.tmp/api-scenario-recorder` using the existing compiler. No extra runtime or
-package is needed. Generated recordings are gitignored too.
+`.tmp/api-scenario-recorder` using the existing compiler. It imports the compiled shared contracts package; `npm ci` prepares that package,
+and the root merge task rebuilds dependencies before compiling the CLI. Generated recordings are gitignored too.
 
 The CLI also submits the generated catalog to `PUT /catalog-submissions` using
 `CATALOG_API_URL` (default `http://localhost:3001`). Start the catalog API before
@@ -160,7 +164,7 @@ The optional fourth argument to `recordScenario` accepts `title`, `category`,
 await recorder.recordScenario(
   'example.dispatch',
   { method: 'POST', path: '/dispatch', body: { destination: 'station' } },
-  test => test.expect(201),
+  (test) => test.expect(201),
   {
     title: 'Dispatch to a station',
     category: 'Delivery',

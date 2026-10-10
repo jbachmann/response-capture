@@ -16,6 +16,7 @@ import { Router } from '@angular/router';
 import { switchMap, throwError } from 'rxjs';
 import { Pet } from './models';
 import { errorMessage, PetstoreApiService } from './petstore-api.service';
+
 @Component({
   selector: 'app-order-form',
   imports: [ReactiveFormsModule],
@@ -50,6 +51,7 @@ export class OrderForm {
   constructor() {
     afterNextRender(() => this.quantity()?.nativeElement.focus());
   }
+
   protected submit() {
     this.form.markAllAsTouched();
     if (this.form.invalid || this.busy()) return;
@@ -81,7 +83,7 @@ export class OrderForm {
           this.error.set(
             e instanceof Error && e.message === 'unavailable'
               ? 'This pet is no longer available. An order was not placed.'
-              : errorMessage(e),
+              : errorMessage(e, 'create-order'),
           );
           this.busy.set(false);
           this.form.enable();

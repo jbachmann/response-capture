@@ -20,10 +20,12 @@ describe('catalog API', () => {
     vi.unstubAllEnvs();
   });
 
+  it('has no root greeting route', async () => {
+    await request(app.getHttpServer()).get('/').expect(404);
+  });
+
   it('returns inventory grouped by system with ISO dates and no catalog payloads', async () => {
-    await request(app.getHttpServer())
-      .get('/catalog-inventory')
-      .expect(200, { systems: [] });
+    await request(app.getHttpServer()).get('/catalog-inventory').expect(200, { systems: [] });
     for (const submission of [
       {
         systemName: 'provider',
@@ -39,14 +41,9 @@ describe('catalog API', () => {
         catalog: { replaced: true },
       },
     ]) {
-      await request(app.getHttpServer())
-        .put('/catalog-submissions')
-        .send(submission)
-        .expect(204);
+      await request(app.getHttpServer()).put('/catalog-submissions').send(submission).expect(204);
     }
-    const { body } = await request(app.getHttpServer())
-      .get('/catalog-inventory')
-      .expect(200);
+    const { body } = await request(app.getHttpServer()).get('/catalog-inventory').expect(200);
     expect(body).toEqual({
       systems: [
         {
@@ -64,51 +61,31 @@ describe('catalog API', () => {
     });
     for (const system of body.systems) {
       for (const catalog of system.catalogs) {
-        expect(new Date(catalog.submittedOn).toISOString()).toBe(
-          catalog.submittedOn,
-        );
+        expect(new Date(catalog.submittedOn).toISOString()).toBe(catalog.submittedOn);
       }
     }
   });
 
   it('lists stored submissions with metadata and catalog payloads', async () => {
-    await request(app.getHttpServer())
-      .get('/catalog-submission')
-      .expect(200, []);
+    await request(app.getHttpServer()).get('/catalog-submission').expect(200, []);
     const submission = {
       systemName: 'provider',
       commitHash: 'abc',
       alias: 'main',
       catalog: { arbitrary: [null, true] },
     };
-    await request(app.getHttpServer())
-      .put('/catalog-submissions')
-      .send(submission)
-      .expect(204);
-    const response = await request(app.getHttpServer())
-      .get('/catalog-submission')
-      .expect(200);
-    expect(response.body).toEqual([
-      { ...submission, submittedAt: expect.any(String) },
-    ]);
-    expect(new Date(response.body[0].submittedAt).toISOString()).toBe(
-      response.body[0].submittedAt,
-    );
+    await request(app.getHttpServer()).put('/catalog-submissions').send(submission).expect(204);
+    const response = await request(app.getHttpServer()).get('/catalog-submission').expect(200);
+    expect(response.body).toEqual([{ ...submission, submittedAt: expect.any(String) }]);
+    expect(new Date(response.body[0].submittedAt).toISOString()).toBe(response.body[0].submittedAt);
     const replacement = {
       systemName: 'provider',
       commitHash: 'abc',
       catalog: { replaced: true },
     };
-    await request(app.getHttpServer())
-      .put('/catalog-submissions')
-      .send(replacement)
-      .expect(204);
-    const updated = await request(app.getHttpServer())
-      .get('/catalog-submission')
-      .expect(200);
-    expect(updated.body).toEqual([
-      { ...replacement, submittedAt: expect.any(String) },
-    ]);
+    await request(app.getHttpServer()).put('/catalog-submissions').send(replacement).expect(204);
+    const updated = await request(app.getHttpServer()).get('/catalog-submission').expect(200);
+    expect(updated.body).toEqual([{ ...replacement, submittedAt: expect.any(String) }]);
   });
 
   it('stores arbitrary catalogs and returns only payloads through both lookups', async () => {
@@ -131,16 +108,10 @@ describe('catalog API', () => {
       .put('/catalog-submissions')
       .send({ systemName: 'any system', commitHash: 'abc', catalog: {} })
       .expect(204);
-    await request(app.getHttpServer())
-      .get('/catalogs/any%20system/abc')
-      .expect(200, {});
-    await request(app.getHttpServer())
-      .get('/catalogs/any%20system/main')
-      .expect(404);
+    await request(app.getHttpServer()).get('/catalogs/any%20system/abc').expect(200, {});
+    await request(app.getHttpServer()).get('/catalogs/any%20system/main').expect(404);
     await request(app.getHttpServer()).get('/catalogs/missing').expect(404);
-    await request(app.getHttpServer())
-      .get('/catalogs/any%20system/missing')
-      .expect(404);
+    await request(app.getHttpServer()).get('/catalogs/any%20system/missing').expect(404);
   });
 
   it.each([
@@ -156,10 +127,7 @@ describe('catalog API', () => {
     { systemName: 's', commitHash: 'c', catalog: null },
     { systemName: 's', commitHash: 'c', catalog: 'text' },
   ])('rejects invalid submissions: %j', async (submission) => {
-    await request(app.getHttpServer())
-      .put('/catalog-submissions')
-      .send(submission)
-      .expect(400);
+    await request(app.getHttpServer()).put('/catalog-submissions').send(submission).expect(400);
     await request(app.getHttpServer()).get('/catalogs/s').expect(404);
   });
 
@@ -169,17 +137,9 @@ describe('catalog API', () => {
       commitHash: 'c',
       catalog: { data: 'a'.repeat(200_000) },
     };
-    await request(app.getHttpServer())
-      .put('/catalog-submissions')
-      .send(submission)
-      .expect(204);
-    await request(app.getHttpServer())
-      .get('/catalogs/s')
-      .expect(200, submission.catalog);
+    await request(app.getHttpServer()).put('/catalog-submissions').send(submission).expect(204);
+    await request(app.getHttpServer()).get('/catalogs/s').expect(200, submission.catalog);
     submission.catalog.data = 'a'.repeat(10 * 1024 * 1024);
-    await request(app.getHttpServer())
-      .put('/catalog-submissions')
-      .send(submission)
-      .expect(413);
+    await request(app.getHttpServer()).put('/catalog-submissions').send(submission).expect(413);
   });
 });

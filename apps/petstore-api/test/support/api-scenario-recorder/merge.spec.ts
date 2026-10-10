@@ -44,12 +44,11 @@ describe('catalog merging', () => {
     const diagnostic = vi.fn();
     const filename = await mergeScenarios(directory, diagnostic);
     const first = await readFile(filename, 'utf8');
-    expect(
-      JSON.parse(first).scenarios.map((entry: { id: string }) => entry.id),
-    ).toEqual(['a', 'z']);
-    expect(diagnostic).toHaveBeenCalledWith(
-      'Shared method/path GET /pet/1: a, z',
-    );
+    expect(JSON.parse(first).scenarios.map((entry: { id: string }) => entry.id)).toEqual([
+      'a',
+      'z',
+    ]);
+    expect(diagnostic).toHaveBeenCalledWith('Shared method/path GET /pet/1: a, z');
     await mergeScenarios(directory, diagnostic);
     expect(await readFile(filename, 'utf8')).toBe(first);
     expect(first.endsWith('\n')).toBe(true);
@@ -59,9 +58,7 @@ describe('catalog merging', () => {
     const filename = await mergeScenarios(directory);
     const before = await readFile(filename, 'utf8');
     await atomicWrite(join(directory, 'b.json'), scenario('same'));
-    await expect(mergeScenarios(directory)).rejects.toThrow(
-      /Duplicate.*same.*b.json.*a.json/,
-    );
+    await expect(mergeScenarios(directory)).rejects.toThrow(/Duplicate.*same.*b.json.*a.json/);
     expect(await readFile(filename, 'utf8')).toBe(before);
   });
   it.each([
@@ -70,18 +67,16 @@ describe('catalog merging', () => {
     JSON.stringify({ catalogVersion: 3, scenarios: [] }),
     JSON.stringify({
       catalogVersion: 1,
-      scenarios: [
-        scenario('ok'),
-        { ...scenario('bad'), response: { status: 999, body: null } },
-      ],
+      scenarios: [scenario('ok'), { ...scenario('bad'), response: { status: 999, body: null } }],
     }),
   ])('rejects invalid files with filename diagnostics', async (contents) => {
     await writeFile(join(directory, 'bad.json'), contents);
     await expect(mergeScenarios(directory)).rejects.toThrow(/bad.json/);
   });
   it('merges an empty directory into an empty catalog', async () => {
-    expect(
-      JSON.parse(await readFile(await mergeScenarios(directory), 'utf8')),
-    ).toEqual({ catalogVersion: 1, scenarios: [] });
+    expect(JSON.parse(await readFile(await mergeScenarios(directory), 'utf8'))).toEqual({
+      catalogVersion: 1,
+      scenarios: [],
+    });
   });
 });

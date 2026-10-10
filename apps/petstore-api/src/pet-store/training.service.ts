@@ -38,10 +38,7 @@ export class TrainingService {
       // Delete referencing orders first while keeping foreign keys enabled.
       db.prepare('DELETE FROM orders').run();
       db.prepare('DELETE FROM pets').run();
-      db.prepare('DELETE FROM sqlite_sequence WHERE name IN (?, ?)').run(
-        'pets',
-        'orders',
-      );
+      db.prepare('DELETE FROM sqlite_sequence WHERE name IN (?, ?)').run('pets', 'orders');
       const result = populate();
       db.exec('COMMIT');
       return result;

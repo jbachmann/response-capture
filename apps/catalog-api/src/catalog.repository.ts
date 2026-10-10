@@ -2,14 +2,35 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type {
-  CatalogSubmission,
-  StoredCatalogSubmission,
-} from './catalog-submission.js';
-import type {
-  CatalogInventoryResponse,
-  CatalogInventorySystem,
-} from './catalog-inventory.js';
+import type { CatalogSubmission, StoredCatalogSubmission } from './catalog-submission.js';
+import type { CatalogInventoryResponse, CatalogInventorySystem } from './catalog-inventory.js';
+
+type CatalogMetadataRow = {
+  system_name: string;
+  commit_hash: string;
+  alias: string | null;
+  submitted_at: string;
+};
+
+type CatalogSubmissionRow = CatalogMetadataRow & { catalog: string };
+
+function versionFromRow(row: CatalogMetadataRow) {
+  return {
+    commitHash: row.commit_hash,
+    ...(row.alias === null ? {} : { alias: row.alias }),
+    submittedOn: row.submitted_at,
+  };
+}
+
+function submissionFromRow(row: CatalogSubmissionRow): StoredCatalogSubmission {
+  return {
+    systemName: row.system_name,
+    commitHash: row.commit_hash,
+    ...(row.alias === null ? {} : { alias: row.alias }),
+    catalog: JSON.parse(row.catalog) as Record<string, unknown>,
+    submittedAt: row.submitted_at,
+  };
+}
 
 @Injectable()
 export class CatalogRepository implements OnModuleDestroy {
@@ -52,10 +73,8 @@ export class CatalogRepository implements OnModuleDestroy {
     this.db.exec('BEGIN IMMEDIATE');
     try {
       const sequence = this.db
-        .prepare(
-          'UPDATE submission_sequence SET value = value + 1 WHERE id = 1 RETURNING value',
-        )
-        .get()!;
+        .prepare('UPDATE submission_sequence SET value = value + 1 WHERE id = 1 RETURNING value')
+        .get() as { value: number };
       this.db
         .prepare(
           `
@@ -89,45 +108,32 @@ export class CatalogRepository implements OnModuleDestroy {
          FROM catalog_submissions
          ORDER BY system_name ASC, submitted_at DESC, submission_sequence DESC`,
       )
-      .all();
+      .all() as CatalogMetadataRow[];
     for (const row of rows) {
-      const name = row.system_name as string;
+      const name = row.system_name;
       let system = systems.get(name);
       if (system === undefined) {
         system = { name, catalogs: [] };
         systems.set(name, system);
       }
-      system.catalogs.push({
-        commitHash: row.commit_hash as string,
-        ...(row.alias === null ? {} : { alias: row.alias as string }),
-        submittedOn: new Date(row.submitted_at as string),
-      });
+      system.catalogs.push(versionFromRow(row));
     }
     return { systems: [...systems.values()] };
   }
 
   list(): StoredCatalogSubmission[] {
-    return this.db
+    const rows = this.db
       .prepare(
         `SELECT system_name, commit_hash, alias, catalog, submitted_at
-         FROM catalog_submissions
-         ORDER BY submitted_at DESC, submission_sequence DESC`,
+       FROM catalog_submissions
+       ORDER BY submitted_at DESC, submission_sequence DESC`,
       )
-      .all()
-      .map((row) => ({
-        systemName: row.system_name as string,
-        commitHash: row.commit_hash as string,
-        ...(row.alias === null ? {} : { alias: row.alias as string }),
-        catalog: JSON.parse(row.catalog as string) as Record<string, unknown>,
-        submittedAt: row.submitted_at as string,
-      }));
+      .all() as CatalogSubmissionRow[];
+    return rows.map(submissionFromRow);
   }
 
-  latest(
-    systemName: string,
-    selector?: string,
-  ): Record<string, unknown> | undefined {
-    const row =
+  latest(systemName: string, selector?: string): Record<string, unknown> | undefined {
+    const row = (
       selector === undefined
         ? this.db
             .prepare(
@@ -141,10 +147,9 @@ export class CatalogRepository implements OnModuleDestroy {
           AND (alias = ? OR commit_hash = ?)
           ORDER BY submitted_at DESC, submission_sequence DESC LIMIT 1`,
             )
-            .get(systemName, selector, selector);
-    return row
-      ? (JSON.parse(row.catalog as string) as Record<string, unknown>)
-      : undefined;
+            .get(systemName, selector, selector)
+    ) as { catalog: string } | undefined;
+    return row ? (JSON.parse(row.catalog) as Record<string, unknown>) : undefined;
   }
 
   onModuleDestroy(): void {

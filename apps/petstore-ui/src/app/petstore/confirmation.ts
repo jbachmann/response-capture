@@ -7,6 +7,7 @@ import {
   output,
   viewChild,
 } from '@angular/core';
+
 @Component({
   selector: 'app-confirmation',
   changeDetection: ChangeDetectionStrategy.OnPush,

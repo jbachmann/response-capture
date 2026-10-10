@@ -52,22 +52,22 @@ application errors. Database operations are synchronous.
 
 ## API
 
-| Method | Route | Behavior |
-| --- | --- | --- |
-| POST | `/pet` | Create a pet, generating its ID (201) |
-| GET | `/pet` | List all pets in ID order (200) |
-| PUT | `/pet` | Replace an existing pet using its required ID (200) |
-| GET | `/pet/findByStatus?status=available,pending` | Match any supplied status (200) |
-| GET | `/pet/findByTags?tags=cute&tags=small` | Match any supplied tag name (200) |
-| GET | `/pet/:petId` | Read a pet (200) |
-| DELETE | `/pet/:petId` | Delete an unreferenced pet (204) |
-| GET | `/store/inventory` | Count each pet status, including zero counts (200) |
-| GET | `/store/order` | List all orders, newest ID first (200; empty array when none) |
-| POST | `/store/order` | Create an order for an existing pet (201) |
-| GET | `/store/order/:orderId` | Read an order (200) |
-| DELETE | `/store/order/:orderId` | Delete an order (204) |
-| POST | `/training/seed` | Clear and repopulate static training data (200) |
-| DELETE | `/training/database` | Clear all pets and orders (204) |
+| Method | Route                                        | Behavior                                                      |
+| ------ | -------------------------------------------- | ------------------------------------------------------------- |
+| POST   | `/pet`                                       | Create a pet, generating its ID (201)                         |
+| GET    | `/pet`                                       | List all pets in ID order (200)                               |
+| PUT    | `/pet`                                       | Replace an existing pet using its required ID (200)           |
+| GET    | `/pet/findByStatus?status=available,pending` | Match any supplied status (200)                               |
+| GET    | `/pet/findByTags?tags=cute&tags=small`       | Match any supplied tag name (200)                             |
+| GET    | `/pet/:petId`                                | Read a pet (200)                                              |
+| DELETE | `/pet/:petId`                                | Delete an unreferenced pet (204)                              |
+| GET    | `/store/inventory`                           | Count each pet status, including zero counts (200)            |
+| GET    | `/store/order`                               | List all orders, newest ID first (200; empty array when none) |
+| POST   | `/store/order`                               | Create an order for an existing pet (201)                     |
+| GET    | `/store/order/:orderId`                      | Read an order (200)                                           |
+| DELETE | `/store/order/:orderId`                      | Delete an order (204)                                         |
+| POST   | `/training/seed`                             | Clear and repopulate static training data (200)               |
+| DELETE | `/training/database`                         | Clear all pets and orders (204)                               |
 
 Pets require a nonblank `name` and a `photoUrls` array of strings (which may be
 empty). Optional category and tag objects accept positive safe integer `id`
@@ -203,3 +203,5 @@ reference [catalog](docs/catalog.json) contains 55 annotated examples. Regenerat
 it from a fresh recording/merge run; do not hand-edit generated request/response
 data. See the [recorder metadata guide](test/support/api-scenario-recorder/README.md#browsing-metadata)
 for authoring and version 1 compatibility details.
+
+`GET /` returns 404; the generated greeting endpoint has been removed.

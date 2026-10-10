@@ -3,10 +3,7 @@ import { PetRepository } from './pet.repository.js';
 import { OrderRepository } from './order.repository.js';
 import { PetStatus } from './pet.dto.js';
 import { OrderStatus } from './order.dto.js';
-import {
-  SQLITE_CONSTRAINT_FOREIGNKEY,
-  SQLITE_CONSTRAINT_TRIGGER,
-} from './sqlite-errors.js';
+import { SQLITE_CONSTRAINT_FOREIGNKEY, SQLITE_CONSTRAINT_TRIGGER } from './sqlite-errors.js';
 
 // Exercise the real SQLite schema without HTTP or mocked statements.
 describe('Petstore repositories', () => {
@@ -103,10 +100,7 @@ describe('Petstore repositories', () => {
     const orderId = orders.create({ ...order, petId });
     expect(() => pets.delete(petId)).toThrow(
       expect.objectContaining({
-        errcode: expect.toBeOneOf([
-          SQLITE_CONSTRAINT_FOREIGNKEY,
-          SQLITE_CONSTRAINT_TRIGGER,
-        ]),
+        errcode: expect.toBeOneOf([SQLITE_CONSTRAINT_FOREIGNKEY, SQLITE_CONSTRAINT_TRIGGER]),
       }),
     );
     expect(pets.findOne(petId)).toEqual({ ...pet, id: petId });
@@ -123,15 +117,9 @@ describe('Petstore repositories', () => {
       complete: false,
     };
     expect(() => orders.create({ ...valid, quantity: 0 })).toThrow();
-    expect(() =>
-      orders.create({ ...valid, status: 'invalid' as OrderStatus }),
-    ).toThrow();
-    expect(() =>
-      orders.create({ ...valid, complete: 2 as unknown as boolean }),
-    ).toThrow();
-    expect(() =>
-      pets.create({ ...pet, status: 'invalid' as PetStatus }),
-    ).toThrow();
+    expect(() => orders.create({ ...valid, status: 'invalid' as OrderStatus })).toThrow();
+    expect(() => orders.create({ ...valid, complete: 2 as unknown as boolean })).toThrow();
+    expect(() => pets.create({ ...pet, status: 'invalid' as PetStatus })).toThrow();
     expect(orders.findOne(1)).toBeUndefined();
     expect(pets.findAll()).toHaveLength(1);
   });

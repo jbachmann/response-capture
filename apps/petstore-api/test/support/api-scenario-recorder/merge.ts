@@ -52,16 +52,11 @@ export async function mergeScenarios(
   const filename = join(directory, 'catalog.json');
   await atomicWrite(filename, {
     catalogVersion: 1,
-    scenarios: [...scenarios.values()]
-      .map((entry) => entry.scenario)
-      .sort(compareIds),
+    scenarios: [...scenarios.values()].map((entry) => entry.scenario).sort(compareIds),
   });
   return filename;
 }
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   import('./submission.js')
     .then(({ mergeAndSubmitScenarios }) =>
       mergeAndSubmitScenarios(process.argv[2] ?? 'artifacts/api-scenarios'),

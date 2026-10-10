@@ -1,0 +1,13 @@
+node_modules
+**/dist
+**/.angular
+**/.tmp
+**/.turbo
+**/coverage
+**/artifacts
+**/data
+package-lock.json
+apps/petstore-api/docs/catalog.json
+AGENTS.md
+apps/*/AGENTS.md
+**/.github/copilot-instructions.md

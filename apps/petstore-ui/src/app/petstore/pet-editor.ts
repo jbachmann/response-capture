@@ -1,40 +1,16 @@
+import { petPayload } from './pet-payload';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, of, switchMap, tap } from 'rxjs';
-import { NamedEntity, Pet, PetInput, PetStatus, validId } from './models';
+import { NamedEntity, Pet, PetStatus, validId } from './models';
 import { errorMessage, PetstoreApiService } from './petstore-api.service';
 export function tagRow(tag: NamedEntity = {}) {
   return new FormGroup({
     id: new FormControl<number | null>(tag.id ?? null),
     name: new FormControl(tag.name ?? '', { nonNullable: true }),
   });
-}
-export function petPayload(form: PetEditor['form'], original: Pet | null = null): PetInput {
-  const v = form.getRawValue();
-  const category: NamedEntity = {
-    ...(v.categoryId !== null && (v.category.trim() || !original?.category?.name)
-      ? { id: v.categoryId }
-      : {}),
-    ...(v.category.trim() ? { name: v.category.trim() } : {}),
-  };
-  return {
-    name: v.name.trim(),
-    status: v.status,
-    photoUrls:
-      original && v.photos === original.photoUrls.join('\n')
-        ? [...original.photoUrls]
-        : v.photos
-            .split('\n')
-            .map((s) => s.trim())
-            .filter(Boolean),
-    ...(Object.keys(category).length ? { category } : {}),
-    tags: v.tags.map((t) => ({
-      ...(t.id !== null ? { id: t.id } : {}),
-      ...(t.name.trim() ? { name: t.name.trim() } : {}),
-    })),
-  };
 }
 @Component({
   selector: 'app-pet-editor',
@@ -63,6 +39,7 @@ export class PetEditor {
     tags: new FormArray<ReturnType<typeof tagRow>>([]),
     photos: new FormControl('', { nonNullable: true }),
   });
+
   constructor() {
     this.route.paramMap
       .pipe(
@@ -98,6 +75,7 @@ export class PetEditor {
       )
       .subscribe((p) => this.populate(p));
   }
+
   private populate(p: Pet | null) {
     this.loading.set(false);
     if (!p) return;
@@ -112,6 +90,7 @@ export class PetEditor {
     this.form.controls.tags.clear();
     p.tags.forEach((t) => this.form.controls.tags.push(tagRow(t)));
   }
+
   protected load() {
     const id = validId(this.route.snapshot.paramMap.get('id'));
     if (!id) return;
@@ -128,9 +107,11 @@ export class PetEditor {
         },
       });
   }
+
   protected addTag() {
     this.form.controls.tags.push(tagRow());
   }
+
   protected save() {
     this.form.markAllAsTouched();
     if (this.form.invalid || this.saving()) return;
@@ -138,7 +119,7 @@ export class PetEditor {
     this.form.disable();
     this.error.set('');
     const original = this.original();
-    const p = petPayload(this.form, original);
+    const p = petPayload(this.form.getRawValue(), original);
     const request = original
       ? this.api.updatePet({ ...p, id: original.id })
       : this.api.createPet(p);

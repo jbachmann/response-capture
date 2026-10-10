@@ -2,9 +2,7 @@
   "$schema": "https://turborepo.dev/schema.json",
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "!dist/**",
@@ -24,15 +22,10 @@
         "!**/*.db",
         "!**/*.db-*"
       ],
-      "outputs": [
-        "dist/**",
-        "*.tsbuildinfo"
-      ]
+      "outputs": ["dist/**", "*.tsbuildinfo"]
     },
     "test": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "!dist/**",
@@ -57,26 +50,20 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": [
-        "PORT",
-        "DATABASE_PATH",
-        "CATALOG_DATABASE_PATH"
-      ]
+      "passThroughEnv": ["PORT", "DATABASE_PATH", "CATALOG_DATABASE_PATH"],
+      "dependsOn": ["^build"]
     },
     "test:e2e": {
-      "cache": false
+      "cache": false,
+      "dependsOn": ["^build"]
     },
     "scenarios:merge": {
       "cache": false,
-      "passThroughEnv": [
-        "CATALOG_API_URL",
-        "CATALOG_ALIAS"
-      ]
+      "passThroughEnv": ["CATALOG_API_URL", "CATALOG_ALIAS"],
+      "dependsOn": ["^build"]
     }
   },
-  "globalPassThroughEnv": [
-    "NG_BUILD_MAX_WORKERS"
-  ],
+  "globalPassThroughEnv": ["NG_BUILD_MAX_WORKERS"],
   "remoteCache": {
     "enabled": false
   }

@@ -17,14 +17,10 @@ export class IdPipe implements PipeTransform<string, number> {
   }
 }
 
-const rawIdParam = createParamDecorator(
-  (name: string, context: ExecutionContext): string => {
-    const request = context
-      .switchToHttp()
-      .getRequest<{ params: Record<string, string> }>();
-    return request.params[name];
-  },
-);
+const rawIdParam = createParamDecorator((name: string, context: ExecutionContext): string => {
+  const request = context.switchToHttp().getRequest<{ params: Record<string, string> }>();
+  return request.params[name];
+});
 
 // A custom parameter avoids ValidationPipe's eager Number conversion so IdPipe
 // can reject non-decimal inputs such as "1e2" before parsing them.

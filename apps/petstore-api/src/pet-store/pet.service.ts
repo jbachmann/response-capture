@@ -1,8 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePetDto, PetDto, PetStatus, UpdatePetDto } from './pet.dto.js';
 import { PetRepository } from './pet.repository.js';
 import {
@@ -62,13 +58,7 @@ export class PetService {
     try {
       this.pets.delete(id);
     } catch (error) {
-      if (
-        isSqliteConstraint(
-          error,
-          SQLITE_CONSTRAINT_FOREIGNKEY,
-          SQLITE_CONSTRAINT_TRIGGER,
-        )
-      ) {
+      if (isSqliteConstraint(error, SQLITE_CONSTRAINT_FOREIGNKEY, SQLITE_CONSTRAINT_TRIGGER)) {
         throw new ConflictException('Pet is referenced by an order');
       }
       throw error;

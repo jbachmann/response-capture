@@ -1,3 +1,4 @@
+import type { Order, Inventory } from '@response-capture/contracts/petstore';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -57,7 +58,7 @@ export class CreateOrderDto {
   complete?: boolean;
 }
 
-export class OrderDto {
+export class OrderDto implements Order {
   @ApiProperty({
     type: 'integer',
     minimum: 1,
@@ -90,7 +91,7 @@ export class OrderDto {
   id: number;
 }
 
-export class InventoryDto {
+export class InventoryDto implements Inventory {
   @ApiProperty({ type: 'integer', minimum: 0 })
   available: number;
 

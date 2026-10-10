@@ -27,7 +27,7 @@ describe('catalog persistence', () => {
 
   it('groups inventory metadata by system and preserves ordering after replacements and reopening', () => {
     expect(repository.inventory()).toEqual({ systems: [] });
-    const initialTime = new Date('2026-10-09T12:00:00Z');
+    const initialTime = '2026-10-09T12:00:00.000Z';
     repository.submit({
       systemName: 'z',
       commitHash: 'one',
@@ -45,9 +45,7 @@ describe('catalog persistence', () => {
       systems: [
         {
           name: '__proto__',
-          catalogs: [
-            { commitHash: 'one', alias: '', submittedOn: initialTime },
-          ],
+          catalogs: [{ commitHash: 'one', alias: '', submittedOn: initialTime }],
         },
         {
           name: 'z',
@@ -68,21 +66,19 @@ describe('catalog persistence', () => {
       systems: [
         {
           name: '__proto__',
-          catalogs: [
-            { commitHash: 'one', alias: '', submittedOn: initialTime },
-          ],
+          catalogs: [{ commitHash: 'one', alias: '', submittedOn: initialTime }],
         },
         {
           name: 'z',
           catalogs: [
             {
               commitHash: 'one',
-              submittedOn: new Date('2026-10-09T13:00:00Z'),
+              submittedOn: '2026-10-09T13:00:00.000Z',
             },
             { commitHash: 'two', submittedOn: initialTime },
             {
               commitHash: 'three',
-              submittedOn: new Date('2026-10-09T11:00:00Z'),
+              submittedOn: '2026-10-09T11:00:00.000Z',
             },
           ],
         },
@@ -154,15 +150,10 @@ describe('catalog persistence', () => {
     expect(repository.latest('other', 'main')).toEqual({ other: true });
     const db = new DatabaseSync(path);
     try {
-      expect(
-        db.prepare('SELECT count(*) AS count FROM catalog_submissions').get()
-          ?.count,
-      ).toBe(2);
+      expect(db.prepare('SELECT count(*) AS count FROM catalog_submissions').get()?.count).toBe(2);
       expect(
         db
-          .prepare(
-            "SELECT submitted_at FROM catalog_submissions WHERE system_name = 'provider'",
-          )
+          .prepare("SELECT submitted_at FROM catalog_submissions WHERE system_name = 'provider'")
           .get()?.submitted_at,
       ).toBe('2026-10-09T13:00:00.000Z');
     } finally {

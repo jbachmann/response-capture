@@ -1,5 +1,6 @@
+import type { Scenario } from '@response-capture/contracts/scenarios';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { displayTitle, ScenarioCategory, statusLabel } from './catalog';
+import { displayTitle, ScenarioCategory, statusLabel } from './scenario-filters';
 
 @Component({
   selector: 'app-scenario-list',

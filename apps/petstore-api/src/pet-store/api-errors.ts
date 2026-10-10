@@ -19,9 +19,7 @@ export class ApiErrorDto {
   error: string;
 }
 
-export function ApiErrors(
-  options: { notFound?: boolean; conflict?: boolean } = {},
-) {
+export function ApiErrors(options: { notFound?: boolean; conflict?: boolean } = {}) {
   const decorators = [
     ApiBadRequestResponse({
       description: 'Invalid input or unknown properties',

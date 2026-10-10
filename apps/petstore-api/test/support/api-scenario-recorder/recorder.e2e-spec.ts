@@ -84,14 +84,7 @@ describe('scenario capture against NestJS/Express', () => {
   });
   it('captures actual JSON objects, arrays, primitives and explicit null', async () => {
     const capture = recorder();
-    const bodies: Json[] = [
-      { nested: { x: 1 } },
-      [1, { x: true }],
-      'hello',
-      42,
-      false,
-      null,
-    ];
+    const bodies: Json[] = [{ nested: { x: 1 } }, [1, { x: true }], 'hello', 42, false, null];
     for (const [index, body] of bodies.entries()) {
       await capture.recordScenario(
         `echo.${index}`,
@@ -109,9 +102,7 @@ describe('scenario capture against NestJS/Express', () => {
     expect(
       recorded.every(
         (s) =>
-          s.request.method === 'POST' &&
-          s.request.path === '/echo' &&
-          s.response.status === 201,
+          s.request.method === 'POST' && s.request.path === '/echo' && s.response.status === 201,
       ),
     ).toBe(true);
     expect(recorded[0].response.headers).toEqual({
@@ -122,37 +113,25 @@ describe('scenario capture against NestJS/Express', () => {
     const capture = recorder();
     await request(app.getHttpServer()).get('/empty').expect(204);
     await expect(
-      capture.recordScenario(
-        'failed',
-        { method: 'GET', path: '/empty' },
-        (test) => test.expect(201),
+      capture.recordScenario('failed', { method: 'GET', path: '/empty' }, (test) =>
+        test.expect(201),
       ),
     ).rejects.toThrow();
     await expect(
-      capture.recordScenario(
-        'late-assertion',
-        { method: 'GET', path: '/empty' },
-        async (test) => {
-          const response = await test.expect(204);
-          expect(response.status).toBe(200);
-          return response;
-        },
-      ),
+      capture.recordScenario('late-assertion', { method: 'GET', path: '/empty' }, async (test) => {
+        const response = await test.expect(204);
+        expect(response.status).toBe(200);
+        return response;
+      }),
     ).rejects.toThrow();
     await expect(
-      capture.recordScenario('text', { method: 'GET', path: '/text' }, (test) =>
-        test.expect(200),
-      ),
+      capture.recordScenario('text', { method: 'GET', path: '/text' }, (test) => test.expect(200)),
     ).rejects.toThrow(/text.*content-type.*unsupported/);
-    await capture.recordScenario(
-      'empty',
-      { method: 'GET', path: '/empty' },
-      (test) => test.expect(204),
+    await capture.recordScenario('empty', { method: 'GET', path: '/empty' }, (test) =>
+      test.expect(204),
     );
-    await capture.recordScenario(
-      'missing',
-      { method: 'GET', path: '/missing' },
-      (test) => test.expect(404),
+    await capture.recordScenario('missing', { method: 'GET', path: '/missing' }, (test) =>
+      test.expect(404),
     );
     const scenarios = (await catalog((await capture.flush())!)).scenarios;
     expect(scenarios.map((s) => s.id)).toEqual(['empty', 'missing']);
@@ -162,13 +141,7 @@ describe('scenario capture against NestJS/Express', () => {
   });
   it('rejects unsupported requests and mismatched hints before sending', async () => {
     const capture = recorder();
-    for (const body of [
-      undefined,
-      new Date(),
-      Buffer.from('x'),
-      { x: undefined },
-      NaN,
-    ]) {
+    for (const body of [undefined, new Date(), Buffer.from('x'), { x: undefined }, NaN]) {
       if (body === undefined) {
         continue;
       }
@@ -209,16 +182,12 @@ describe('scenario capture against NestJS/Express', () => {
     body.name = 'after';
     await expect(capture.flush()).rejects.toThrow(/Await all/);
     await expect(
-      capture.recordScenario('one', { method: 'GET', path: '/empty' }, (test) =>
-        test.expect(204),
-      ),
+      capture.recordScenario('one', { method: 'GET', path: '/empty' }, (test) => test.expect(204)),
     ).rejects.toThrow(/Duplicate/);
     release();
     await recording;
     await expect(
-      capture.recordScenario('one', { method: 'GET', path: '/empty' }, (test) =>
-        test.expect(204),
-      ),
+      capture.recordScenario('one', { method: 'GET', path: '/empty' }, (test) => test.expect(204)),
     ).rejects.toThrow(/Duplicate/);
     const paths = await Promise.all([capture.flush(), capture.flush()]);
     expect(paths[0]).toBe(paths[1]);
@@ -226,9 +195,7 @@ describe('scenario capture against NestJS/Express', () => {
       name: 'before',
     });
     await expect(
-      capture.recordScenario('two', { method: 'GET', path: '/empty' }, (test) =>
-        test.expect(204),
-      ),
+      capture.recordScenario('two', { method: 'GET', path: '/empty' }, (test) => test.expect(204)),
     ).rejects.toThrow(/closed/);
   });
   it('keeps concurrent same-suite files distinct and produces byte-identical equivalent recordings', async () => {
@@ -244,12 +211,8 @@ describe('scenario capture against NestJS/Express', () => {
     );
     const paths = await Promise.all(captures.map((capture) => capture.flush()));
     expect(paths[0]).not.toBe(paths[1]);
-    expect(await readFile(paths[0]!, 'utf8')).toBe(
-      await readFile(paths[1]!, 'utf8'),
-    );
-    expect(
-      (await readdir(directory)).filter((name) => name.endsWith('.tmp')),
-    ).toEqual([]);
+    expect(await readFile(paths[0]!, 'utf8')).toBe(await readFile(paths[1]!, 'utf8'));
+    expect((await readdir(directory)).filter((name) => name.endsWith('.tmp'))).toEqual([]);
     await expect(mergeScenarios(directory)).rejects.toThrow(/Duplicate.*same/);
   });
 });

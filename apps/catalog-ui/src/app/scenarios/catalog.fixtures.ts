@@ -1,4 +1,4 @@
-import { Scenario } from './catalog';
+import type { Scenario } from '@response-capture/contracts/scenarios';
 
 export const example = (id: string, metadata: Partial<Scenario> = {}): Scenario => ({
   schemaVersion: 1,

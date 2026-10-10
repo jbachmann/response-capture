@@ -6,12 +6,8 @@ export function configureApp(app: NestExpressApplication): void {
 
   const config = new DocumentBuilder()
     .setTitle('Catalog API')
-    .setDescription(
-      'Submit catalogs and retrieve them by system, alias, or commit hash.',
-    )
+    .setDescription('Submit catalogs and retrieve them by system, alias, or commit hash.')
     .setVersion('1.0')
     .build();
-  SwaggerModule.setup('docs', app, () =>
-    SwaggerModule.createDocument(app, config),
-  );
+  SwaggerModule.setup('docs', app, () => SwaggerModule.createDocument(app, config));
 }

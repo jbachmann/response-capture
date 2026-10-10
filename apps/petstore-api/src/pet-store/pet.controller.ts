@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Post,
-  Put,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Post, Put, Query } from '@nestjs/common';
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -18,13 +9,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ApiErrors } from './api-errors.js';
-import {
-  CreatePetDto,
-  PetDto,
-  StatusQueryDto,
-  TagsQueryDto,
-  UpdatePetDto,
-} from './pet.dto.js';
+import { CreatePetDto, PetDto, StatusQueryDto, TagsQueryDto, UpdatePetDto } from './pet.dto.js';
 import { IdParam } from './id.pipe.js';
 import { PetService } from './pet.service.js';
 
@@ -51,8 +36,7 @@ export class PetController {
 
   @Put()
   @ApiOperation({
-    summary:
-      'Replace an existing pet; omitted optional fields reset to defaults',
+    summary: 'Replace an existing pet; omitted optional fields reset to defaults',
   })
   @ApiBody({ type: UpdatePetDto })
   @ApiOkResponse({ type: PetDto })

@@ -1,20 +1,8 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import {
-  CreateOrderDto,
-  InventoryDto,
-  OrderDto,
-  OrderStatus,
-} from './order.dto.js';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { CreateOrderDto, InventoryDto, OrderDto, OrderStatus } from './order.dto.js';
 import { OrderRepository } from './order.repository.js';
 import { PetRepository } from './pet.repository.js';
-import {
-  isSqliteConstraint,
-  SQLITE_CONSTRAINT_FOREIGNKEY,
-} from './sqlite-errors.js';
+import { isSqliteConstraint, SQLITE_CONSTRAINT_FOREIGNKEY } from './sqlite-errors.js';
 
 @Injectable()
 export class StoreService {

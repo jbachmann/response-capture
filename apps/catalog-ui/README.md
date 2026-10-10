@@ -66,3 +66,14 @@ npm run build --workspace=catalog-ui
 Serve `apps/catalog-ui/dist/catalog-ui/browser` with your static host. Configure
 UI path fallback and API forwarding as described above. No UI end-to-end runner
 is configured in this repository.
+
+## Shared contracts and UI
+
+`@response-capture/contracts/scenarios` owns version 1 validation. Browsing now
+rejects unknown schema fields and request-matching hints that contradict the recorded
+body, using the same checks as the recorder. Legacy records without metadata remain
+supported. The catalog API continues storing arbitrary JSON objects; an unsupported
+payload shows the invalid-catalog state without changing the stored submission.
+
+Theme controls, route focus, and common tokens come from `@response-capture/ui`.
+The catalog theme continues using `response-capture:catalog-ui:theme` in local storage.

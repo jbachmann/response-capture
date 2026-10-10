@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+
 @Component({
   selector: 'app-pet-photo',
   changeDetection: ChangeDetectionStrategy.OnPush,

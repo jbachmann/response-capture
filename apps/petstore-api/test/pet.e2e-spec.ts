@@ -9,16 +9,12 @@ describe('pet behavior (e2e)', () => {
     await recorder.recordScenario(
       'pet.create.success',
       { method: 'POST', path: '/pet', body: pet },
-      (test) =>
-        test
-          .expect(201)
-          .expect({ ...pet, id: 1, tags: [], status: 'available' }),
+      (test) => test.expect(201).expect({ ...pet, id: 1, tags: [], status: 'available' }),
       {
         title: 'Create a pet with defaults',
         category: 'Pets',
         group: 'Create a pet',
-        description:
-          'Creates Milo with no category or tags and the default available status.',
+        description: 'Creates Milo with no category or tags and the default available status.',
         tags: ['defaults'],
         requestMatch: { bodyContains: { name: 'Milo' } },
       },
@@ -31,8 +27,7 @@ describe('pet behavior (e2e)', () => {
         title: 'Reject a pet with missing fields',
         category: 'Pets',
         group: 'Create a pet',
-        description:
-          'An empty request is rejected because a name and photo URLs are required.',
+        description: 'An empty request is rejected because a name and photo URLs are required.',
         tags: [],
       },
     );
@@ -44,8 +39,7 @@ describe('pet behavior (e2e)', () => {
         title: 'Read a pet that does not exist',
         category: 'Pets',
         group: 'Read a pet',
-        description:
-          'Pet 999 has not been created, so the API reports it as missing.',
+        description: 'Pet 999 has not been created, so the API reports it as missing.',
         tags: [],
       },
     );
@@ -54,9 +48,7 @@ describe('pet behavior (e2e)', () => {
       { method: 'GET', path: '/pet' },
       async (test) => {
         const response = await test.expect(200);
-        expect(response.body).toEqual([
-          { ...pet, id: 1, tags: [], status: 'available' },
-        ]);
+        expect(response.body).toEqual([{ ...pet, id: 1, tags: [], status: 'available' }]);
         return response;
       },
       {
@@ -75,17 +67,16 @@ describe('pet behavior (e2e)', () => {
         title: 'Delete an existing pet',
         category: 'Pets',
         group: 'Delete a pet',
-        description:
-          'Deletes a pet with no referencing orders and returns no response body.',
+        description: 'Deletes a pet with no referencing orders and returns no response body.',
         tags: [],
       },
     );
     await recorder.flush();
   });
 
-  it('preserves root and starts empty', async () => {
+  it('has no greeting route and starts empty', async () => {
     const recorder = scenarios();
-    await api().get('/').expect(200).expect('Hello World!');
+    await api().get('/').expect(404);
     await recorder.recordScenario(
       'pet.list.empty',
       { method: 'GET', path: '/pet' },
@@ -151,8 +142,7 @@ describe('pet behavior (e2e)', () => {
         title: 'Read an existing pet',
         category: 'Pets',
         group: 'Read a pet',
-        description:
-          'Returns the previously created pet, including its category and tags.',
+        description: 'Returns the previously created pet, including its category and tags.',
         tags: [],
       },
     );
@@ -161,8 +151,7 @@ describe('pet behavior (e2e)', () => {
     await recorder.recordScenario(
       'pet.replace.resets-defaults',
       { method: 'PUT', path: '/pet', body: replaced },
-      (test) =>
-        test.expect(200).expect({ ...replaced, tags: [], status: 'available' }),
+      (test) => test.expect(200).expect({ ...replaced, tags: [], status: 'available' }),
       {
         title: 'Replace a pet and reset optional fields',
         category: 'Pets',
@@ -184,8 +173,7 @@ describe('pet behavior (e2e)', () => {
         title: 'Delete a replaced pet',
         category: 'Pets',
         group: 'Delete a pet',
-        description:
-          'After replacing the pet, deletion succeeds and returns no response body.',
+        description: 'After replacing the pet, deletion succeeds and returns no response body.',
         tags: [],
       },
     );
@@ -197,8 +185,7 @@ describe('pet behavior (e2e)', () => {
         title: 'Read a deleted pet',
         category: 'Pets',
         group: 'Read a pet',
-        description:
-          'After deleting pet 1, reading it reports that it no longer exists.',
+        description: 'After deleting pet 1, reading it reports that it no longer exists.',
         tags: [],
       },
     );
@@ -223,8 +210,7 @@ describe('pet behavior (e2e)', () => {
         title: 'Replace a pet that does not exist',
         category: 'Pets',
         group: 'Replace a pet',
-        description:
-          'Replacing a previously deleted pet reports it as missing.',
+        description: 'Replacing a previously deleted pet reports it as missing.',
         tags: [],
       },
     );
@@ -259,11 +245,7 @@ describe('pet behavior (e2e)', () => {
         ),
       ).toEqual([1, 2]);
     }
-    for (const query of [
-      'tags=big,cute',
-      'tags=big&tags=cute',
-      'tags=big,cute&tags=small',
-    ]) {
+    for (const query of ['tags=big,cute', 'tags=big&tags=cute', 'tags=big,cute&tags=small']) {
       expect(
         (await api().get(`/pet/findByTags?${query}`).expect(200)).body.map(
           (p: { id: number }) => p.id,
@@ -276,10 +258,7 @@ describe('pet behavior (e2e)', () => {
       .expect(200)
       .then((response) => expect(response.body).toHaveLength(1));
     await api().get('/pet/findByTags?tags=unknown').expect(200).expect([]);
-    await api()
-      .get('/store/inventory')
-      .expect(200)
-      .expect({ available: 1, pending: 1, sold: 1 });
+    await api().get('/store/inventory').expect(200).expect({ available: 1, pending: 1, sold: 1 });
   });
 
   it.each([

@@ -7,9 +7,7 @@ describe('store behavior (e2e)', () => {
   it('lists all persisted orders newest first and excludes deleted orders', async () => {
     await api().get('/store/order').expect(200).expect([]);
     const savedPet = (await api().post('/pet').send(pet).expect(201)).body;
-    const first = (
-      await api().post('/store/order').send({ petId: savedPet.id }).expect(201)
-    ).body;
+    const first = (await api().post('/store/order').send({ petId: savedPet.id }).expect(201)).body;
     const second = (
       await api()
         .post('/store/order')
@@ -31,9 +29,7 @@ describe('store behavior (e2e)', () => {
     await api().get('/store/order').expect(200).expect([]);
     const document = (await api().get('/docs-json').expect(200)).body;
     expect(
-      document.paths['/store/order'].get.responses['200'].content[
-        'application/json'
-      ].schema,
+      document.paths['/store/order'].get.responses['200'].content['application/json'].schema,
     ).toEqual({
       type: 'array',
       items: { $ref: '#/components/schemas/OrderDto' },
@@ -50,8 +46,7 @@ describe('store behavior (e2e)', () => {
         title: 'Reject an order for a missing pet',
         category: 'Orders',
         group: 'Create an order',
-        description:
-          'No pet with ID 99 exists, so the order cannot be created.',
+        description: 'No pet with ID 99 exists, so the order cannot be created.',
         tags: ['relationships'],
       },
     );
@@ -89,8 +84,7 @@ describe('store behavior (e2e)', () => {
         title: 'Read an existing order',
         category: 'Orders',
         group: 'Read an order',
-        description:
-          'Returns the previously created order and its default values.',
+        description: 'Returns the previously created order and its default values.',
         tags: [],
       },
     );
@@ -102,8 +96,7 @@ describe('store behavior (e2e)', () => {
         title: 'Cannot delete a pet linked to an order',
         category: 'Pets',
         group: 'Delete a pet',
-        description:
-          'An existing order references pet 1, so deletion is rejected with a conflict.',
+        description: 'An existing order references pet 1, so deletion is rejected with a conflict.',
         tags: ['relationships'],
       },
     );
@@ -136,8 +129,7 @@ describe('store behavior (e2e)', () => {
         title: 'Delete an existing order',
         category: 'Orders',
         group: 'Delete an order',
-        description:
-          'Deletes order 1 while preserving its pet and returns no response body.',
+        description: 'Deletes order 1 while preserving its pet and returns no response body.',
         tags: ['relationships'],
       },
     );
@@ -149,8 +141,7 @@ describe('store behavior (e2e)', () => {
         title: 'Read a deleted order',
         category: 'Orders',
         group: 'Read an order',
-        description:
-          'After deleting order 1, reading it reports that it no longer exists.',
+        description: 'After deleting order 1, reading it reports that it no longer exists.',
         tags: [],
       },
     );

@@ -1,3 +1,4 @@
+import { THEME_STORAGE_KEY } from '@response-capture/ui/theme';
 import axe from 'axe-core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -10,7 +11,10 @@ describe('Theme selection', () => {
   beforeEach(() => {
     localStorage.removeItem(STORAGE_KEY);
     document.documentElement.removeAttribute('data-theme');
-    TestBed.configureTestingModule({ imports: [App], providers: [provideRouter([])] });
+    TestBed.configureTestingModule({
+      imports: [App],
+      providers: [provideRouter([]), { provide: THEME_STORAGE_KEY, useValue: STORAGE_KEY }],
+    });
   });
 
   afterEach(() => {

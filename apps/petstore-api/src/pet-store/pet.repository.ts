@@ -52,22 +52,17 @@ export class PetRepository {
   }
 
   findAll(): PetDto[] {
-    const rows = this.database.db
-      .prepare('SELECT * FROM pets ORDER BY id')
-      .all() as PetRow[];
+    const rows = this.database.db.prepare('SELECT * FROM pets ORDER BY id').all() as PetRow[];
     return rows.map(petFromRow);
   }
 
   exists(id: number): boolean {
-    return Boolean(
-      this.database.db.prepare('SELECT id FROM pets WHERE id = ?').get(id),
-    );
+    return Boolean(this.database.db.prepare('SELECT id FROM pets WHERE id = ?').get(id));
   }
 
   findOne(id: number): PetDto | undefined {
-    const row = this.database.db
-      .prepare('SELECT * FROM pets WHERE id = ?')
-      .get(id) as PetRow | undefined;
+    const row = this.database.db.prepare('SELECT * FROM pets WHERE id = ?').get(id) as
+      PetRow | undefined;
     return row ? petFromRow(row) : undefined;
   }
 
@@ -87,9 +82,7 @@ export class PetRepository {
   findByStatus(statuses: PetStatus[]): PetDto[] {
     const placeholders = statuses.map(() => '?').join(',');
     const rows = this.database.db
-      .prepare(
-        `SELECT * FROM pets WHERE status IN (${placeholders}) ORDER BY id`,
-      )
+      .prepare(`SELECT * FROM pets WHERE status IN (${placeholders}) ORDER BY id`)
       .all(...statuses) as PetRow[];
     return rows.map(petFromRow);
   }
@@ -123,8 +116,6 @@ export class PetRepository {
   }
 
   delete(id: number): boolean {
-    return Boolean(
-      this.database.db.prepare('DELETE FROM pets WHERE id = ?').run(id).changes,
-    );
+    return Boolean(this.database.db.prepare('DELETE FROM pets WHERE id = ?').run(id).changes);
   }
 }

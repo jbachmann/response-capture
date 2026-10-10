@@ -55,6 +55,7 @@
     },
     "test:e2e": {
       "cache": false,
+      "passThroughEnv": ["CATALOG_API_URL", "CATALOG_SELECTOR", "CI"],
       "dependsOn": ["^build"]
     },
     "scenarios:merge": {

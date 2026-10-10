@@ -51,6 +51,7 @@ npm run build
 npm test
 npm run lint:petstore-api
 npm run test:e2e
+npm run test:e2e:ui
 npm run scenarios:merge
 ```
 
@@ -62,7 +63,10 @@ Serve `apps/petstore-ui/dist/petstore-ui/browser` and
 Deployment commands remain application-local.
 
 Build and unit-test tasks use local Turbo caching in `.turbo/`. Development,
-API end-to-end tests, and scenario merging are uncached. Before repeating a
+API and UI end-to-end tests, and scenario merging are uncached. The UI browser
+suite uses catalog-backed MSW responses and requires a submitted catalog;
+see the [Petstore UI test workflow](apps/petstore-ui/README.md#catalog-backed-browser-tests).
+Before repeating a
 scenario recording run, clear `apps/petstore-api/artifacts/api-scenarios` as described
 in the [recorder documentation](apps/petstore-api/test/support/api-scenario-recorder/README.md).
 Start the catalog API before merging (`npm run dev --workspace=catalog-api`, or the

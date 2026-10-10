@@ -52,13 +52,9 @@
     @if (visible().length) {
       <section class="pet-grid" aria-label="Pets">
         @for (pet of visible(); track pet.id) {
-          <a
-            class="panel pet-card"
-            [routerLink]="['/pets', pet.id]"
-            [attr.aria-labelledby]="'pet-title-' + pet.id"
-          >
+          <a class="panel pet-card" [routerLink]="['/pets', pet.id]">
             <app-pet-photo [url]="pet.photoUrls[0]" [name]="pet.name" />
-            <h2 [id]="'pet-title-' + pet.id">{{ pet.name }}</h2>
+            <h2>{{ pet.name }}</h2>
             <span class="badge">{{ pet.status }}</span>
             <p>{{ pet.category?.name || 'No category' }}</p>
             <p class="tags">

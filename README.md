@@ -69,8 +69,9 @@ suite uses catalog-backed MSW responses and requires a submitted catalog;
 see the [Petstore UI test workflow](apps/petstore-ui/README.md#catalog-backed-browser-tests).
 The [scenario recorder package](packages/scenario-recorder/README.md) keeps native
 Supertest chains and assertions. Ordinary E2E runs generate no recordings.
-`npm run scenarios:capture` produces the current run's catalog locally at
-`apps/petstore-api/artifacts/api-scenarios/catalog.json`; it publishes only after
+`npm run scenarios:capture` groups each run's scenarios locally in
+`apps/petstore-api/artifacts/api-scenarios/<uuid>/catalog.json` and updates
+`apps/petstore-api/artifacts/api-scenarios/catalog.json` for submission; it publishes only after
 the entire run passes and requires no catalog API or cleanup of old recordings.
 Start the catalog API (`npm run dev --workspace=catalog-api`) and run
 `npm run scenarios:submit` to upload explicitly to `PUT /catalog-submissions`.

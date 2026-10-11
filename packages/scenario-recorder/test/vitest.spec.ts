@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
@@ -14,6 +14,11 @@ const recorder = fileURLToPath(new URL('../dist/', import.meta.url));
 const moduleUrl = (path: string) => JSON.stringify(pathToFileURL(path).href);
 let directory: string;
 const previous = 'previous catalog must survive failure\n';
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const captureDirectories = async () =>
+  (await readdir(directory, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory() && uuidPattern.test(entry.name))
+    .map((entry) => entry.name);
 
 beforeEach(async () => {
   directory = await mkdtemp(join(tmpdir(), 'scenario-vitest-'));
@@ -79,6 +84,7 @@ it('ordinary test runs leave markers inert and the catalog untouched', async () 
   });
   expect(result.code, result.output).toBe(0);
   expect(await readFile(join(directory, 'catalog.json'), 'utf8')).toBe(previous);
+  expect(await captureDirectories()).toEqual([]);
 });
 
 it('publishes only the current successful run across concurrent tests and parallel workers', async () => {
@@ -96,6 +102,9 @@ it('retry', { retry: 1 }, async () => { if (attempt === 0) await api('failed-att
   );
   expect(result.code, result.output).toBe(0);
   const first = await readFile(join(directory, 'catalog.json'), 'utf8');
+  const firstDirectories = await captureDirectories();
+  expect(firstDirectories).toHaveLength(1);
+  expect(await readFile(join(directory, firstDirectories[0], 'catalog.json'), 'utf8')).toBe(first);
   expect(JSON.parse(first).scenarios.map((s: { id: string }) => s.id)).toEqual([
     'one',
     'retry',
@@ -112,6 +121,13 @@ it('retry', async () => { await api('retry'); });
   );
   expect(again.code, again.output).toBe(0);
   expect(await readFile(join(directory, 'catalog.json'), 'utf8')).toBe(first);
+  const secondDirectories = await captureDirectories();
+  expect(secondDirectories).toHaveLength(2);
+  expect(secondDirectories).toContain(firstDirectories[0]);
+  for (const group of secondDirectories) {
+    expect(await readdir(join(directory, group))).toEqual(['catalog.json']);
+    expect(await readFile(join(directory, group, 'catalog.json'), 'utf8')).toBe(first);
+  }
 });
 
 it.each([
@@ -161,6 +177,7 @@ it.each([
   const result = await run(body);
   expect(result.code, result.output).not.toBe(0);
   expect(await readFile(join(directory, 'catalog.json'), 'utf8')).toBe(previous);
+  expect(await captureDirectories()).toEqual([]);
 });
 
 it('makes publication failures fail the command', async () => {
@@ -170,4 +187,5 @@ it('makes publication failures fail the command', async () => {
   const result = await run(`it('one', async () => { await api('one'); });`);
   expect(result.code, result.output).not.toBe(0);
   expect(result.output).toMatch(/EISDIR|directory/);
+  expect(await captureDirectories()).toEqual([]);
 });

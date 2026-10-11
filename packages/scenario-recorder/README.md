@@ -70,7 +70,10 @@ npm run test:e2e         # normal tests, no capture
 npm run scenarios:capture
 ```
 
-Capture writes `apps/petstore-api/artifacts/api-scenarios/catalog.json` locally.
+Each successful capture groups its scenarios in
+`apps/petstore-api/artifacts/api-scenarios/<uuid>/catalog.json`, using a newly
+generated UUID for the folder name. Capture also updates
+`apps/petstore-api/artifacts/api-scenarios/catalog.json` with the latest run for submission.
 It requires no catalog API. After starting catalog-api, upload explicitly with
 `npm run scenarios:submit`. Uploading, Git metadata, and Petstore identity belong
 to the app's submission script.

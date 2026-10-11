@@ -1,4 +1,6 @@
 import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
+import { rm } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import type { TestUserConfig } from 'vitest/config';
 import type { Reporter, TestModule, TestRunEndReason } from 'vitest/node';
@@ -39,8 +41,15 @@ export class ScenarioCaptureReporter implements Reporter {
         }
       }
     }
-    const filename = join(this.options.outputDirectory, 'catalog.json');
-    await writeCatalog(filename, scenarios);
+    const directory = join(this.options.outputDirectory, randomUUID());
+    const filename = join(directory, 'catalog.json');
+    try {
+      await writeCatalog(filename, scenarios);
+      await writeCatalog(join(this.options.outputDirectory, 'catalog.json'), scenarios);
+    } catch (error) {
+      await rm(directory, { recursive: true, force: true });
+      throw error;
+    }
     console.info(`Captured ${scenarios.length} scenarios in ${filename}`);
   }
 }

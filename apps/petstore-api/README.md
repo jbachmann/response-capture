@@ -185,7 +185,10 @@ npm run scenarios:submit
 ```
 
 The root `npm run scenarios:capture` builds dependencies automatically. Capture
-writes only `artifacts/api-scenarios/catalog.json` and needs no catalog API.
+groups each successful run in `artifacts/api-scenarios/<uuid>/catalog.json`, using
+a newly generated UUID as the folder name, and updates
+`artifacts/api-scenarios/catalog.json` with the latest run for submission.
+It needs no catalog API.
 The catalog contains the current run's scenarios; previous suite files are
 ignored. A failed or interrupted run preserves the previous catalog. Assertions
 can follow the request; manual recorder creation and flushing are unnecessary.

@@ -1,8 +1,9 @@
+import { capture } from '@response-capture/scenario-recorder/supertest';
 import { pet, usePetstoreFixture } from './support/petstore-fixture.js';
 
 describe('store behavior (e2e)', () => {
   const fixture = usePetstoreFixture();
-  const { api, scenarios } = fixture;
+  const { api } = fixture;
 
   it('lists all persisted orders newest first and excludes deleted orders', async () => {
     await api().get('/store/order').expect(200).expect([]);
@@ -37,145 +38,138 @@ describe('store behavior (e2e)', () => {
   });
 
   it('creates and deletes orders, protects pets, and leaves pet status unchanged', async () => {
-    const recorder = scenarios();
-    await recorder.recordScenario(
-      'store.order.create.missing-pet',
-      { method: 'POST', path: '/store/order', body: { petId: 99 } },
-      (test) => test.expect(404),
-      {
-        title: 'Reject an order for a missing pet',
-        category: 'Orders',
-        group: 'Create an order',
-        description: 'No pet with ID 99 exists, so the order cannot be created.',
-        tags: ['relationships'],
-      },
-    );
+    await api()
+      .post('/store/order')
+      .send({ petId: 99 })
+      .use(
+        capture('store.order.create.missing-pet', {
+          title: 'Reject an order for a missing pet',
+          category: 'Orders',
+          group: 'Create an order',
+          description: 'No pet with ID 99 exists, so the order cannot be created.',
+          tags: ['relationships'],
+        }),
+      )
+      .expect(404);
     await api().post('/pet').send(pet).expect(201);
-    const order = (
-      await recorder.recordScenario(
-        'store.order.create.defaults',
-        { method: 'POST', path: '/store/order', body: { petId: 1 } },
-        async (test) => {
-          const response = await test.expect(201);
-          expect(response.body).toEqual({
-            id: 1,
-            petId: 1,
-            quantity: 1,
-            status: 'placed',
-            complete: false,
-          });
-          return response;
-        },
-        {
+    const createdOrderResponse = await api()
+      .post('/store/order')
+      .send({ petId: 1 })
+      .use(
+        capture('store.order.create.defaults', {
           title: 'Create an order with defaults',
           category: 'Orders',
           group: 'Create an order',
           description:
             'After creating pet 1, an order defaults to quantity 1, placed status, and incomplete.',
           tags: ['defaults', 'relationships'],
-        },
+        }),
       )
-    ).body;
-    await recorder.recordScenario(
-      'store.order.read.success',
-      { method: 'GET', path: '/store/order/1' },
-      (test) => test.expect(200).expect(order),
-      {
-        title: 'Read an existing order',
-        category: 'Orders',
-        group: 'Read an order',
-        description: 'Returns the previously created order and its default values.',
-        tags: [],
-      },
-    );
-    await recorder.recordScenario(
-      'pet.delete.referenced-by-order',
-      { method: 'DELETE', path: '/pet/1' },
-      (test) => test.expect(409),
-      {
-        title: 'Cannot delete a pet linked to an order',
-        category: 'Pets',
-        group: 'Delete a pet',
-        description: 'An existing order references pet 1, so deletion is rejected with a conflict.',
-        tags: ['relationships'],
-      },
-    );
+      .expect(201);
+    expect(createdOrderResponse.body).toEqual({
+      id: 1,
+      petId: 1,
+      quantity: 1,
+      status: 'placed',
+      complete: false,
+    });
+    const order = createdOrderResponse.body;
+    await api()
+      .get('/store/order/1')
+      .use(
+        capture('store.order.read.success', {
+          title: 'Read an existing order',
+          category: 'Orders',
+          group: 'Read an order',
+          description: 'Returns the previously created order and its default values.',
+          tags: [],
+        }),
+      )
+      .expect(200)
+      .expect(order);
+    await api()
+      .delete('/pet/1')
+      .use(
+        capture('pet.delete.referenced-by-order', {
+          title: 'Cannot delete a pet linked to an order',
+          category: 'Pets',
+          group: 'Delete a pet',
+          description:
+            'An existing order references pet 1, so deletion is rejected with a conflict.',
+          tags: ['relationships'],
+        }),
+      )
+      .expect(409);
     await api()
       .get('/pet/1')
       .expect(200)
       .then((r) => expect(r.body.status).toBe('available'));
-    await recorder.recordScenario(
-      'store.inventory.with-order',
-      { method: 'GET', path: '/store/inventory' },
-      (test) => test.expect(200).expect({ available: 1, pending: 0, sold: 0 }),
-      {
-        title: 'Read inventory after creating an order',
-        category: 'Inventory',
-        group: 'Read inventory',
-        description:
-          'Creating an order leaves its pet status unchanged, so inventory still counts one available pet.',
-        tags: ['relationships'],
-      },
-    );
-    await recorder.recordScenario(
-      'store.order.delete.success',
-      { method: 'DELETE', path: '/store/order/1' },
-      async (test) => {
-        const response = await test.expect(204);
-        expect(response.text).toBe('');
-        return response;
-      },
-      {
-        title: 'Delete an existing order',
-        category: 'Orders',
-        group: 'Delete an order',
-        description: 'Deletes order 1 while preserving its pet and returns no response body.',
-        tags: ['relationships'],
-      },
-    );
-    await recorder.recordScenario(
-      'store.order.read.missing',
-      { method: 'GET', path: '/store/order/1' },
-      (test) => test.expect(404),
-      {
-        title: 'Read a deleted order',
-        category: 'Orders',
-        group: 'Read an order',
-        description: 'After deleting order 1, reading it reports that it no longer exists.',
-        tags: [],
-      },
-    );
-    await recorder.recordScenario(
-      'store.order.delete.missing',
-      { method: 'DELETE', path: '/store/order/1' },
-      (test) => test.expect(404),
-      {
-        title: 'Delete an order that does not exist',
-        category: 'Orders',
-        group: 'Delete an order',
-        description:
-          'The order has already been deleted, so a second deletion reports it as missing.',
-        tags: [],
-      },
-    );
-    await recorder.recordScenario(
-      'pet.read.after-order-deletion',
-      { method: 'GET', path: '/pet/1' },
-      async (test) => {
-        const response = await test.expect(200);
-        expect(response.body.status).toBe('available');
-        return response;
-      },
-      {
-        title: 'Read a pet after deleting its order',
-        category: 'Pets',
-        group: 'Read a pet',
-        description: 'Deleting an order leaves its pet available and readable.',
-        tags: ['relationships'],
-      },
-    );
+    await api()
+      .get('/store/inventory')
+      .use(
+        capture('store.inventory.with-order', {
+          title: 'Read inventory after creating an order',
+          category: 'Inventory',
+          group: 'Read inventory',
+          description:
+            'Creating an order leaves its pet status unchanged, so inventory still counts one available pet.',
+          tags: ['relationships'],
+        }),
+      )
+      .expect(200)
+      .expect({ available: 1, pending: 0, sold: 0 });
+    const deletedOrderResponse = await api()
+      .delete('/store/order/1')
+      .use(
+        capture('store.order.delete.success', {
+          title: 'Delete an existing order',
+          category: 'Orders',
+          group: 'Delete an order',
+          description: 'Deletes order 1 while preserving its pet and returns no response body.',
+          tags: ['relationships'],
+        }),
+      )
+      .expect(204);
+    expect(deletedOrderResponse.text).toBe('');
+    await api()
+      .get('/store/order/1')
+      .use(
+        capture('store.order.read.missing', {
+          title: 'Read a deleted order',
+          category: 'Orders',
+          group: 'Read an order',
+          description: 'After deleting order 1, reading it reports that it no longer exists.',
+          tags: [],
+        }),
+      )
+      .expect(404);
+    await api()
+      .delete('/store/order/1')
+      .use(
+        capture('store.order.delete.missing', {
+          title: 'Delete an order that does not exist',
+          category: 'Orders',
+          group: 'Delete an order',
+          description:
+            'The order has already been deleted, so a second deletion reports it as missing.',
+          tags: [],
+        }),
+      )
+      .expect(404);
+    const remainingPetResponse = await api()
+      .get('/pet/1')
+      .use(
+        capture('pet.read.after-order-deletion', {
+          title: 'Read a pet after deleting its order',
+          category: 'Pets',
+          group: 'Read a pet',
+          description: 'Deleting an order leaves its pet available and readable.',
+          tags: ['relationships'],
+        }),
+      )
+      .expect(200);
+    expect(remainingPetResponse.body.status).toBe('available');
     await api().delete('/pet/1').expect(204);
-    await recorder.flush();
   });
 
   it('persists nested pet and order records after shutdown and reopening', async () => {
@@ -203,37 +197,38 @@ describe('store behavior (e2e)', () => {
         .expect(201)
     ).body;
     await fixture.reopen();
-    const recorder = scenarios();
-    await recorder.recordScenario(
-      'pet.read.persisted',
-      { method: 'GET', path: `/pet/${savedPet.id}` },
-      (test) => test.expect(200).expect(savedPet),
-      {
-        title: 'Read a pet after reopening the database',
-        category: 'Pets',
-        group: 'Read a pet',
-        description:
-          'A saved pet retains its nested category, tags, and status after the application reopens the database.',
-        tags: ['persistence'],
-      },
-    );
-    await recorder.recordScenario(
-      'store.order.read.persisted',
-      { method: 'GET', path: `/store/order/${savedOrder.id}` },
-      (test) => test.expect(200).expect(savedOrder),
-      {
-        title: 'Read an order after reopening the database',
-        category: 'Orders',
-        group: 'Read an order',
-        description:
-          'The saved quantity, shipping date, status, and completion flag survive reopening the database.',
-        tags: ['persistence'],
-      },
-    );
+
+    await api()
+      .get(`/pet/${savedPet.id}`)
+      .use(
+        capture('pet.read.persisted', {
+          title: 'Read a pet after reopening the database',
+          category: 'Pets',
+          group: 'Read a pet',
+          description:
+            'A saved pet retains its nested category, tags, and status after the application reopens the database.',
+          tags: ['persistence'],
+        }),
+      )
+      .expect(200)
+      .expect(savedPet);
+    await api()
+      .get(`/store/order/${savedOrder.id}`)
+      .use(
+        capture('store.order.read.persisted', {
+          title: 'Read an order after reopening the database',
+          category: 'Orders',
+          group: 'Read an order',
+          description:
+            'The saved quantity, shipping date, status, and completion flag survive reopening the database.',
+          tags: ['persistence'],
+        }),
+      )
+      .expect(200)
+      .expect(savedOrder);
     await api().delete(`/pet/${savedPet.id}`).expect(409);
     const next = (await api().post('/pet').send(pet).expect(201)).body;
     expect(next.id).toBeGreaterThan(savedPet.id);
-    await recorder.flush();
   });
 
   it('accepts omitted order fields but rejects explicit null', async () => {

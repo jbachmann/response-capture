@@ -60,6 +60,15 @@
     },
     "scenarios:merge": {
       "cache": false,
+      "passThroughEnv": [],
+      "dependsOn": ["^build"]
+    },
+    "scenarios:capture": {
+      "cache": false,
+      "dependsOn": ["^build"]
+    },
+    "scenarios:submit": {
+      "cache": false,
       "passThroughEnv": ["CATALOG_API_URL", "CATALOG_ALIAS"],
       "dependsOn": ["^build"]
     }

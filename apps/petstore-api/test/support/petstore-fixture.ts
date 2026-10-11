@@ -7,7 +7,6 @@ import { tmpdir } from 'node:os';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module.js';
 import { setupApp } from '../../src/setup-app.js';
-import { createScenarioRecorder } from './api-scenario-recorder/index.js';
 
 export const pet = {
   name: 'Milo',
@@ -64,12 +63,6 @@ export function usePetstoreFixture() {
       return currentApp();
     },
     api: () => request(currentApp().getHttpServer()),
-    scenarios: (suiteId = 'petstore-e2e') =>
-      createScenarioRecorder({
-        app: currentApp().getHttpServer(),
-        suiteId,
-        outputDirectory: 'artifacts/api-scenarios',
-      }),
     async reopen(): Promise<void> {
       await currentApp().close();
       app = undefined;

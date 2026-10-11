@@ -1,7 +1,9 @@
 import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
-import { mergeScenarios } from './merge.js';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { validateCatalog } from '@response-capture/contracts/scenarios';
 
 const execute = promisify(execFile);
 
@@ -16,15 +18,15 @@ async function git(...args: string[]): Promise<string> {
   }
 }
 
-export async function mergeAndSubmitScenarios(
+export async function submitScenarios(
   directory: string,
   diagnostic: (message: string) => void = console.info,
 ): Promise<string> {
-  const filename = await mergeScenarios(directory, diagnostic);
-  diagnostic(`Wrote ${filename}`);
+  const filename = join(directory, 'catalog.json');
+  const catalog: unknown = JSON.parse(await readFile(filename, 'utf8'));
+  validateCatalog(catalog, filename);
   const commitHash = await git('rev-parse', 'HEAD');
   const alias = process.env.CATALOG_ALIAS ?? (await git('branch', '--show-current'));
-  const catalog = JSON.parse(await readFile(filename, 'utf8')) as unknown;
   const baseUrl = process.env.CATALOG_API_URL ?? 'http://localhost:3001';
   const endpoint = `${baseUrl.replace(/\/+$/, '')}/catalog-submissions`;
   try {
@@ -46,9 +48,16 @@ export async function mergeAndSubmitScenarios(
     await response.body?.cancel();
   } catch (error) {
     throw new Error(
-      `Catalog submission to ${endpoint} failed: ${error instanceof Error ? error.message : String(error)}. Local catalog remains at ${filename}; check the catalog API and rerun scenarios:merge.`,
+      `Catalog submission to ${endpoint} failed: ${error instanceof Error ? error.message : String(error)}. Local catalog remains at ${filename}; check the catalog API and rerun scenarios:submit.`,
     );
   }
   diagnostic(`Submitted petstore-api catalog at commit ${commitHash}`);
   return filename;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  submitScenarios(process.argv[2] ?? 'artifacts/api-scenarios').catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
 }

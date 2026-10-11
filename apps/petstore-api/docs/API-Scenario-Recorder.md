@@ -2,7 +2,7 @@
 
 This document records the original design proposal. For the current API,
 examples, limitations, and verification commands, see the
-[recorder usage guide](../test/support/api-scenario-recorder/README.md).
+[recorder package guide](../../../packages/scenario-recorder/README.md).
 The proposal below is retained for design context.
 
 ## 1. Objective
@@ -229,5 +229,5 @@ call sites and preserved during merging; no fixed category/group/tag vocabulary
 is enforced. Titles, categories, and groups must be nonblank strings, and tags
 must be unique nonblank strings. Updated validators accept both old and enriched
 records; older strict validators require updating before reading enriched data.
-See the [recorder guide](../test/support/api-scenario-recorder/README.md#browsing-metadata)
+See the [recorder guide](../../../packages/scenario-recorder/README.md#supported-exchanges-and-metadata)
 for the metadata argument and an example.

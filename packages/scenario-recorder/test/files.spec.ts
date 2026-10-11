@@ -1,8 +1,8 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { mergeScenarios } from './merge.js';
-import { atomicWrite } from './writer.js';
+import { mergeScenarios } from '../src/files.js';
+import { atomicWrite } from '../src/writer.js';
 const scenario = (id: string) => ({
   schemaVersion: 1,
   id,

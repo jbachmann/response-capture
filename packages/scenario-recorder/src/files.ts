@@ -1,8 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { validateCatalog, validateScenario } from './schema.js';
-import type { Scenario } from './schema.js';
+import { validateCatalog, validateScenario } from '@response-capture/contracts/scenarios';
+import type { Scenario } from '@response-capture/contracts/scenarios';
 import { atomicWrite, compareIds } from './writer.js';
 
 export async function mergeScenarios(
@@ -56,13 +55,8 @@ export async function mergeScenarios(
   });
   return filename;
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  import('./submission.js')
-    .then(({ mergeAndSubmitScenarios }) =>
-      mergeAndSubmitScenarios(process.argv[2] ?? 'artifacts/api-scenarios'),
-    )
-    .catch((error) => {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exitCode = 1;
-    });
+export async function writeCatalog(filename: string, scenarios: Scenario[]): Promise<void> {
+  const catalog = { catalogVersion: 1, scenarios: [...scenarios].sort(compareIds) };
+  validateCatalog(catalog, filename);
+  await atomicWrite(filename, catalog);
 }

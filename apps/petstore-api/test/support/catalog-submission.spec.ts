@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -16,12 +16,16 @@ vi.mock('node:child_process', () => ({
     }
   },
 }));
-import { mergeAndSubmitScenarios } from './submission.js';
+import { submitScenarios } from './catalog-submission.js';
 
-describe('merge submission', () => {
+describe('catalog submission', () => {
   let directory: string;
   beforeEach(async () => {
     directory = await mkdtemp(join(tmpdir(), 'submission-'));
+    await writeFile(
+      join(directory, 'catalog.json'),
+      JSON.stringify({ catalogVersion: 1, scenarios: [] }),
+    );
     vi.stubGlobal('fetch', mocks.fetch);
     vi.stubEnv('CATALOG_API_URL', 'http://localhost:3001/');
     vi.stubEnv('CATALOG_ALIAS', undefined);
@@ -37,9 +41,9 @@ describe('merge submission', () => {
     await rm(directory, { recursive: true, force: true });
   });
 
-  it('submits the generated file with the full HEAD and branch alias', async () => {
+  it('submits the captured file with the full HEAD and branch alias', async () => {
     const timeout = vi.spyOn(AbortSignal, 'timeout');
-    const filename = await mergeAndSubmitScenarios(directory, () => undefined);
+    const filename = await submitScenarios(directory, () => undefined);
     const [endpoint, options] = mocks.fetch.mock.calls[0];
     expect(endpoint).toBe('http://localhost:3001/catalog-submissions');
     expect(options.method).toBe('PUT');
@@ -57,7 +61,7 @@ describe('merge submission', () => {
   it.each(['release', ''])('honors explicit alias override %j', async (alias) => {
     vi.stubEnv('CATALOG_ALIAS', alias);
     vi.stubEnv('CATALOG_API_URL', 'https://catalog.example');
-    await mergeAndSubmitScenarios(directory, () => undefined);
+    await submitScenarios(directory, () => undefined);
     const payload = JSON.parse(mocks.fetch.mock.calls[0][1].body);
     expect(payload.alias).toBe(alias || undefined);
     expect(mocks.git).toHaveBeenCalledTimes(1);
@@ -69,7 +73,7 @@ describe('merge submission', () => {
     mocks.git.mockImplementation((_command, args) =>
       args[0] === 'rev-parse' ? 'a'.repeat(40) : '',
     );
-    await mergeAndSubmitScenarios(directory, () => undefined);
+    await submitScenarios(directory, () => undefined);
     expect(JSON.parse(mocks.fetch.mock.calls[0][1].body)).not.toHaveProperty('alias');
     expect(mocks.fetch.mock.calls[0][0]).toBe('http://localhost:3001/catalog-submissions');
   });
@@ -78,7 +82,7 @@ describe('merge submission', () => {
     'retains the file on transport failure: %s',
     async (error) => {
       mocks.fetch.mockRejectedValue(error);
-      await expect(mergeAndSubmitScenarios(directory, () => undefined)).rejects.toThrow(
+      await expect(submitScenarios(directory, () => undefined)).rejects.toThrow(
         /Local catalog remains/,
       );
       expect(JSON.parse(await readFile(join(directory, 'catalog.json'), 'utf8'))).toEqual({
@@ -90,7 +94,7 @@ describe('merge submission', () => {
 
   it('reports rejected HTTP submissions and retains the local file', async () => {
     mocks.fetch.mockResolvedValue(new Response('Invalid submission', { status: 400 }));
-    await expect(mergeAndSubmitScenarios(directory, () => undefined)).rejects.toThrow(
+    await expect(submitScenarios(directory, () => undefined)).rejects.toThrow(
       /HTTP 400: Invalid submission/,
     );
     await expect(readFile(join(directory, 'catalog.json'))).resolves.toBeDefined();
@@ -100,10 +104,17 @@ describe('merge submission', () => {
     mocks.git.mockImplementation(() => {
       throw new Error('no HEAD');
     });
-    await expect(mergeAndSubmitScenarios(directory, () => undefined)).rejects.toThrow(
-      /Cannot resolve Git/,
-    );
+    await expect(submitScenarios(directory, () => undefined)).rejects.toThrow(/Cannot resolve Git/);
     expect(mocks.fetch).not.toHaveBeenCalled();
     await expect(readFile(join(directory, 'catalog.json'))).resolves.toBeDefined();
+  });
+
+  it('rejects an invalid local catalog before resolving Git or submitting', async () => {
+    const invalid = JSON.stringify({ catalogVersion: 2, scenarios: [] });
+    await writeFile(join(directory, 'catalog.json'), invalid);
+    await expect(submitScenarios(directory)).rejects.toThrow(/catalogVersion/);
+    expect(mocks.git).not.toHaveBeenCalled();
+    expect(mocks.fetch).not.toHaveBeenCalled();
+    expect(await readFile(join(directory, 'catalog.json'), 'utf8')).toBe(invalid);
   });
 });

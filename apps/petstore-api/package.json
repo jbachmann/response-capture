@@ -20,8 +20,10 @@
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "scenarios:merge": "tsc --project test/support/api-scenario-recorder/tsconfig.cli.json && node .tmp/api-scenario-recorder/merge.js",
-    "dev": "nest start --watch"
+    "scenarios:merge": "scenario-recorder-merge",
+    "dev": "nest start --watch",
+    "scenarios:capture": "vitest run --config ./vitest.config.capture.ts",
+    "scenarios:submit": "node test/support/catalog-submission.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -51,6 +53,7 @@
     "supertest": "^7.0.0",
     "typescript": "^6.0.2",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.2",
+    "@response-capture/scenario-recorder": "*"
   }
 }

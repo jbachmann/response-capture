@@ -1,0 +1,68 @@
+{
+  "name": "@response-capture/scenario-recorder",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    },
+    "./supertest": {
+      "types": "./dist/supertest.d.ts",
+      "default": "./dist/supertest.js"
+    },
+    "./vitest": {
+      "types": "./dist/vitest.d.ts",
+      "default": "./dist/vitest.js"
+    },
+    "./vitest/setup": "./dist/vitest-setup.js",
+    "./files": {
+      "types": "./dist/files.d.ts",
+      "default": "./dist/files.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && vitest run",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "dependencies": {
+    "@mswjs/interceptors": "0.39.8",
+    "@response-capture/contracts": "*"
+  },
+  "peerDependencies": {
+    "supertest": "^7.3.1",
+    "vitest": "^4.1.11"
+  },
+  "peerDependenciesMeta": {
+    "supertest": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/supertest": "^7.0.0",
+    "supertest": "7.3.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  },
+  "bin": {
+    "scenario-recorder-merge": "./bin/merge.mjs"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "README.md"
+  ]
+}

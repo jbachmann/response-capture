@@ -52,7 +52,8 @@ npm test
 npm run lint:petstore-api
 npm run test:e2e
 npm run test:e2e:ui
-npm run scenarios:merge
+npm run scenarios:capture
+npm run scenarios:submit
 ```
 
 Builds produce `apps/petstore-api/dist`, `apps/catalog-api/dist`, `apps/petstore-ui/dist/petstore-ui`,
@@ -63,21 +64,22 @@ Serve `apps/petstore-ui/dist/petstore-ui/browser` and
 Deployment commands remain application-local.
 
 Build and unit-test tasks use local Turbo caching in `.turbo/`. Development,
-API and UI end-to-end tests, and scenario merging are uncached. The UI browser
+API and UI end-to-end tests, capture, merging, and submission are uncached. The UI browser
 suite uses catalog-backed MSW responses and requires a submitted catalog;
 see the [Petstore UI test workflow](apps/petstore-ui/README.md#catalog-backed-browser-tests).
-Before repeating a
-scenario recording run, clear `apps/petstore-api/artifacts/api-scenarios` as described
-in the [recorder documentation](apps/petstore-api/test/support/api-scenario-recorder/README.md).
-Start the catalog API before merging (`npm run dev --workspace=catalog-api`, or the
-combined development command). The merged catalog lives at
-`apps/petstore-api/artifacts/api-scenarios/catalog.json` and is also submitted to
-`PUT /catalog-submissions` at `http://localhost:3001`. Set `CATALOG_API_URL` to
-change the API base URL. Submissions use system name `petstore-api`, the full current
-Git commit hash, and the current branch as alias. `CATALOG_ALIAS` overrides the
-alias; an empty override or detached HEAD omits it. Historical submissions under
-`provider` remain available separately; new submissions use `petstore-api`.
-Submission failures fail the command but retain the generated local file.
+The [scenario recorder package](packages/scenario-recorder/README.md) keeps native
+Supertest chains and assertions. Ordinary E2E runs generate no recordings.
+`npm run scenarios:capture` produces the current run's catalog locally at
+`apps/petstore-api/artifacts/api-scenarios/catalog.json`; it publishes only after
+the entire run passes and requires no catalog API or cleanup of old recordings.
+Start the catalog API (`npm run dev --workspace=catalog-api`) and run
+`npm run scenarios:submit` to upload explicitly to `PUT /catalog-submissions`.
+Set `CATALOG_API_URL` to change the default `http://localhost:3001` API base URL.
+Submissions use system name `petstore-api`, the full current Git commit hash,
+and the current branch as alias. `CATALOG_ALIAS` overrides the alias; an empty
+override or detached HEAD omits it. Submission failures fail the command but
+retain the captured file. `npm run scenarios:merge` remains a local-only utility
+for separately supplied JSON recordings; capture runs do not need it.
 
 The catalog API stores submissions in `apps/catalog-api/data/catalog.sqlite` by
 default; `CATALOG_DATABASE_PATH` overrides it independently of the petstore-api's
@@ -105,6 +107,7 @@ For machines with limited resources, use `NG_BUILD_MAX_WORKERS=2 npm run build`
 - [apps/catalog-api](apps/catalog-api/README.md): NestJS catalog API.
 - [apps/catalog-ui](apps/catalog-ui/README.md): Angular Scenario library.
 - `packages/contracts`: browser-safe wire types and scenario validation, compiled to ESM.
+- [packages/scenario-recorder](packages/scenario-recorder/README.md): reusable capture core, HTTP/Supertest/Vitest adapters, and local file tools.
 - `packages/ui`: Angular theme and route-focus code, plus common CSS; compiled by each UI.
 
 Shared contracts expose browser-safe types; decorated Nest DTOs remain in the APIs.
@@ -112,7 +115,7 @@ The contracts package uses TypeScript 5.9 for compatibility with both UI compile
 Each application's TypeScript configuration remains independent. Both development
 servers exclude shared Angular source entrypoints from Vite prebundling so Angular
 compiles their decorators; see [Angular's prebundling guidance](https://angular.dev/tools/cli/build-system-migration#prebundling). `npm ci` builds
-contracts through the root prepare script. Root Turbo commands build dependencies
+contracts and the scenario recorder through the root prepare script. Root Turbo commands build dependencies
 before application tasks; during combined development contracts run a compiler watcher.
 
 Formatting uses the root Prettier configuration. Run `npm run format:check` or

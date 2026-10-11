@@ -79,15 +79,13 @@ Start catalog-api in another terminal:
 npm run dev --workspace=catalog-api
 ```
 
-If the desired catalog has not yet been submitted, prepare it using the existing
-provider recording workflow. Remove old generated recordings before starting a
-fresh session; otherwise duplicate scenario IDs from previous runs prevent merging.
-The provider tests start their own isolated application instances:
+If the desired catalog has not yet been submitted, capture and submit it from
+the repository root. Capture starts isolated API instances and needs no cleanup
+of previous recordings:
 
 ```sh
-rm -rf apps/petstore-api/artifacts/api-scenarios
-npm run test:e2e --workspace=@response-capture/petstore-api
-npm run scenarios:merge
+npm run scenarios:capture
+npm run scenarios:submit
 ```
 
 Run the browser suite against that submission:

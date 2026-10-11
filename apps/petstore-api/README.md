@@ -168,41 +168,47 @@ XML, pagination, payments, or deployment changes.
 
 ## Recording API scenarios
 
-Integration tests can explicitly record asserted JSON interactions using the
-[test-only API scenario recorder](test/support/api-scenario-recorder/README.md).
-The Petstore end-to-end suites record 55 named scenarios covering pet and order
-CRUD, inventory, conflicts, persistence, training resets, invalid IDs, and empty
-responses. Recorders flush after each opted-in test completes its assertions.
+Integration tests mark selected native Supertest chains with
+`.use(capture(id, metadata))` from the
+[scenario recorder package](../../packages/scenario-recorder/README.md).
+Ordinary tests use normal assertions and write no capture artifacts. The
+Petstore suites capture 55 named scenarios covering CRUD, inventory, conflicts,
+persistence, training resets, invalid IDs, and empty responses.
+
+From this application's directory, after building workspace dependencies:
 
 ```sh
-rm -rf artifacts/api-scenarios
 npm run test:e2e
-npm run scenarios:merge
+npm run scenarios:capture
+# Start catalog-api in another terminal, then upload explicitly:
+npm run scenarios:submit
 ```
 
-Start the catalog API first in another terminal, from the repository root:
-`npm run dev --workspace=catalog-api` (or use the combined `npm run dev`).
+The root `npm run scenarios:capture` builds dependencies automatically. Capture
+writes only `artifacts/api-scenarios/catalog.json` and needs no catalog API.
+The catalog contains the current run's scenarios; previous suite files are
+ignored. A failed or interrupted run preserves the previous catalog. Assertions
+can follow the request; manual recorder creation and flushing are unnecessary.
+Use controlled synthetic fixtures and stable scenario IDs.
 
-This generates gitignored suite files and `artifacts/api-scenarios/catalog.json`,
-then submits the catalog to `PUT /catalog-submissions`. The API URL defaults to
-`http://localhost:3001`; override it with `CATALOG_API_URL`. The submission uses
-system name `petstore-api`, the full Git HEAD hash, and the current branch alias.
+Start the catalog API from the repository root with
+`npm run dev --workspace=catalog-api`. Submission targets `PUT /catalog-submissions`
+at `http://localhost:3001`, configurable through `CATALOG_API_URL`. It uses system
+name `petstore-api`, the full Git HEAD, and the current branch alias.
 `CATALOG_ALIAS` overrides the branch; an empty override or detached HEAD omits it.
-HTTP/network errors or the 30-second submission timeout fail the command while
-retaining the generated file. Correct the API connection and rerun the merge.
-Git metadata errors also fail the command. See the
-[catalog API](../catalog-api/README.md) for storage and lookup behavior.
-The catalog-ui Scenario library browses submitted catalogs through the catalog API; the petstore-api
-does not expose a catalog-reading endpoint.
-Use synthetic fixtures and keep all scenario assertions inside the recorder
-callback. Clear old recordings before a new run; the merger rejects duplicate
-IDs across runs as well as across suites.
+HTTP/network errors, Git metadata errors, and the 30-second submission timeout
+fail the command while retaining the local catalog; retry `scenarios:submit`.
+The [catalog API](../catalog-api/README.md) stores submissions for catalog-ui;
+Petstore exposes no catalog-reading endpoint.
 
-The scenario recordings include optional authored titles, categories, task groups,
-open-ended tags, and descriptions for dynamic browsing in catalog-ui. The
-reference [catalog](docs/catalog.json) contains 55 annotated examples. Regenerate
-it from a fresh recording/merge run; do not hand-edit generated request/response
-data. See the [recorder metadata guide](test/support/api-scenario-recorder/README.md#browsing-metadata)
-for authoring and version 1 compatibility details.
+Optional titles, categories, groups, tags, descriptions, and matching hints are
+preserved in version 1. The reference [catalog](docs/catalog.json) contains the
+same 55 annotated examples. Regenerate it with a full capture run; do not
+hand-edit generated request/response data. See the
+[package guide](../../packages/scenario-recorder/README.md#supported-exchanges-and-metadata)
+for capture limits and metadata rules.
+
+`scenarios:merge` is now a local-only utility for separately supplied JSON
+recordings. It is unnecessary for the capture workflow and never submits data.
 
 `GET /` returns 404; the generated greeting endpoint has been removed.

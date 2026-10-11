@@ -1,73 +1,70 @@
+import { capture } from '@response-capture/scenario-recorder/supertest';
 import { usePetstoreFixture } from './support/petstore-fixture.js';
 
 describe('API contract (e2e)', () => {
   const fixture = usePetstoreFixture();
-  const { api, scenarios } = fixture;
+  const { api } = fixture;
 
   it.each(['0', '-1', '1.5', 'abc', '1e2', '9007199254740992'])(
     'rejects malformed ID %s',
     async (id) => {
-      const recorder = scenarios();
       for (const [resource, path] of [
         ['pet', `/pet/${id}`],
         ['store.order', `/store/order/${id}`],
       ]) {
-        await recorder.recordScenario(
-          `${resource}.read.invalid-id.${id}`,
-          { method: 'GET', path },
-          (test) => test.expect(400),
-          {
-            title: `Reject reading a ${resource === 'pet' ? 'pet' : 'order'} with ID ${id}`,
-            category: resource === 'pet' ? 'Pets' : 'Orders',
-            group: resource === 'pet' ? 'Read a pet' : 'Read an order',
-            description: `ID ${id} is not a positive safe integer in the accepted format; the request is rejected.`,
-            tags: ['boundary-values'],
-          },
-        );
-        await recorder.recordScenario(
-          `${resource}.delete.invalid-id.${id}`,
-          { method: 'DELETE', path },
-          (test) => test.expect(400),
-          {
-            title: `Reject deleting a ${resource === 'pet' ? 'pet' : 'order'} with ID ${id}`,
-            category: resource === 'pet' ? 'Pets' : 'Orders',
-            group: resource === 'pet' ? 'Delete a pet' : 'Delete an order',
-            description: `ID ${id} is not a positive safe integer in the accepted format; the request is rejected.`,
-            tags: ['boundary-values'],
-          },
-        );
+        await api()
+          .get(path)
+          .use(
+            capture(`${resource}.read.invalid-id.${id}`, {
+              title: `Reject reading a ${resource === 'pet' ? 'pet' : 'order'} with ID ${id}`,
+              category: resource === 'pet' ? 'Pets' : 'Orders',
+              group: resource === 'pet' ? 'Read a pet' : 'Read an order',
+              description: `ID ${id} is not a positive safe integer in the accepted format; the request is rejected.`,
+              tags: ['boundary-values'],
+            }),
+          )
+          .expect(400);
+        await api()
+          .delete(path)
+          .use(
+            capture(`${resource}.delete.invalid-id.${id}`, {
+              title: `Reject deleting a ${resource === 'pet' ? 'pet' : 'order'} with ID ${id}`,
+              category: resource === 'pet' ? 'Pets' : 'Orders',
+              group: resource === 'pet' ? 'Delete a pet' : 'Delete an order',
+              description: `ID ${id} is not a positive safe integer in the accepted format; the request is rejected.`,
+              tags: ['boundary-values'],
+            }),
+          )
+          .expect(400);
       }
-      await recorder.flush();
     },
   );
 
   it('accepts the maximum safe ID and reports missing records', async () => {
-    const recorder = scenarios();
-    await recorder.recordScenario(
-      'pet.read.maximum-safe-id',
-      { method: 'GET', path: '/pet/9007199254740991' },
-      (test) => test.expect(404),
-      {
-        title: 'Read a missing pet at the maximum safe ID',
-        category: 'Pets',
-        group: 'Read a pet',
-        description: 'The largest safe integer is a valid ID, but no pet with that ID exists.',
-        tags: ['boundary-values'],
-      },
-    );
-    await recorder.recordScenario(
-      'store.order.read.maximum-safe-id',
-      { method: 'GET', path: '/store/order/9007199254740991' },
-      (test) => test.expect(404),
-      {
-        title: 'Read a missing order at the maximum safe ID',
-        category: 'Orders',
-        group: 'Read an order',
-        description: 'The largest safe integer is a valid ID, but no order with that ID exists.',
-        tags: ['boundary-values'],
-      },
-    );
-    await recorder.flush();
+    await api()
+      .get('/pet/9007199254740991')
+      .use(
+        capture('pet.read.maximum-safe-id', {
+          title: 'Read a missing pet at the maximum safe ID',
+          category: 'Pets',
+          group: 'Read a pet',
+          description: 'The largest safe integer is a valid ID, but no pet with that ID exists.',
+          tags: ['boundary-values'],
+        }),
+      )
+      .expect(404);
+    await api()
+      .get('/store/order/9007199254740991')
+      .use(
+        capture('store.order.read.maximum-safe-id', {
+          title: 'Read a missing order at the maximum safe ID',
+          category: 'Orders',
+          group: 'Read an order',
+          description: 'The largest safe integer is a valid ID, but no order with that ID exists.',
+          tags: ['boundary-values'],
+        }),
+      )
+      .expect(404);
   });
 
   it('serves Scalar and complete request, response, and error schemas', async () => {

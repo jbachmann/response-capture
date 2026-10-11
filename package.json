@@ -21,7 +21,7 @@
     "scenarios:merge": "turbo run scenarios:merge --filter=@response-capture/petstore-api",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "prepare": "npm run build --workspace=@response-capture/contracts && npm run build --workspace=@response-capture/scenario-recorder",
+    "prepare": "npm run build --workspace=@response-capture/contracts && npm run build --workspace=@response-capture/scenario-recorder && npm run build --workspace=@response-capture/scenario-client",
     "scenarios:capture": "turbo run scenarios:capture --filter=@response-capture/petstore-api",
     "scenarios:submit": "turbo run scenarios:submit --filter=@response-capture/petstore-api"
   },

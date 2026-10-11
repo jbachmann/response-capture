@@ -65,8 +65,12 @@ Deployment commands remain application-local.
 
 Build and unit-test tasks use local Turbo caching in `.turbo/`. Development,
 API and UI end-to-end tests, capture, merging, and submission are uncached. The UI browser
-suite uses catalog-backed MSW responses and requires a submitted catalog;
+suite uses catalog-backed Playwright responses and requires a submitted catalog;
 see the [Petstore UI test workflow](apps/petstore-ui/README.md#catalog-backed-browser-tests).
+The [scenario client package](packages/scenario-client/README.md) provides portable
+catalog lookup and optional native Playwright fixtures for incremental replay.
+Its acceptance checks run as part of `npm test` and require Chromium; install it
+with `npm exec --workspace=@response-capture/petstore-ui -- playwright install chromium`.
 The [scenario recorder package](packages/scenario-recorder/README.md) keeps native
 Supertest chains and assertions. Ordinary E2E runs generate no recordings.
 `npm run scenarios:capture` groups each run's scenarios locally in

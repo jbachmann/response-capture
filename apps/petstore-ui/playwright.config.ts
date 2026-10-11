@@ -1,9 +1,4 @@
-import { randomUUID } from 'node:crypto';
-import { resolve } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
-
-// Workers inherit this run-specific directory; retries never fetch a newer catalog.
-process.env['PETSTORE_E2E_RUN_DIR'] ??= resolve(__dirname, 'test-results/catalog', randomUUID());
 
 export default defineConfig({
   testDir: './e2e',

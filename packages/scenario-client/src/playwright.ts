@@ -11,10 +11,10 @@ import {
   ReplaySession,
   type ReplayPolicy,
   type ReplayBinding,
-  type ScenarioReferences,
   type ScenarioHandles,
   type ObservedRequest,
 } from './replay.js';
+import type { ScenarioReference, ScenarioReferences, ScenarioExampleFor } from './references.js';
 import { resolveRouting, type SystemRouting } from './routing.js';
 import { loadSnapshot, startCatalogRun } from './node.js';
 
@@ -23,6 +23,7 @@ export interface SourceDeclaration extends CatalogSource {
 }
 export type CatalogSources = Record<string, SourceDeclaration>;
 export interface CatalogAccess<C extends string = string> {
+  get<R extends ScenarioReference<C>>(reference: R): Promise<ScenarioExampleFor<R>>;
   get(catalog: C, id: string): Promise<ScenarioExample>;
 }
 export interface ReplayControls<C extends string = string> {
@@ -56,30 +57,41 @@ export function scenarioFixtures<const C extends CatalogSources>(options: {
         string,
         Promise<{ catalog: ScenarioCatalog; source: ScenarioExample['source'] }>
       >();
-      await use({
-        get: async (name, id) => {
-          const source = Object.hasOwn(sources, name) ? sources[name] : undefined;
-          if (!source) throw new Error(`Unknown catalog source: ${name}. Declare it in catalogs.`);
-          let pending = loaded.get(name);
-          if (!pending) {
-            pending = (async () => {
-              const { snapshot, path } = await loadSnapshot(source);
-              await testInfo.attach(`catalog-${name}`, { path, contentType: 'application/json' });
-              testInfo.annotations.push({
-                type: 'catalog-source',
-                description: JSON.stringify({ catalog: name, ...snapshot.source }),
-              });
-              return {
-                catalog: new ScenarioCatalog(snapshot.catalog, source.systemName),
-                source: { catalog: name, ...snapshot.source },
-              };
-            })();
-            loaded.set(name, pending);
-          }
-          const result = await pending;
-          return { ...result.catalog.get(id), source: { ...result.source } };
-        },
-      });
+      function get<R extends ScenarioReference<Alias>>(
+        reference: R,
+      ): Promise<ScenarioExampleFor<R>>;
+      function get(name: Alias, id: string): Promise<ScenarioExample>;
+      async function get(
+        referenceOrName: ScenarioReference<Alias> | Alias,
+        id?: string,
+      ): Promise<ScenarioExample<unknown, unknown>> {
+        const reference =
+          typeof referenceOrName === 'string'
+            ? { catalog: referenceOrName, id: id ?? '' }
+            : referenceOrName;
+        const { catalog: name } = reference;
+        const source = Object.hasOwn(sources, name) ? sources[name] : undefined;
+        if (!source) throw new Error(`Unknown catalog source: ${name}. Declare it in catalogs.`);
+        let pending = loaded.get(name);
+        if (!pending) {
+          pending = (async () => {
+            const { snapshot, path } = await loadSnapshot(source);
+            await testInfo.attach(`catalog-${name}`, { path, contentType: 'application/json' });
+            testInfo.annotations.push({
+              type: 'catalog-source',
+              description: JSON.stringify({ catalog: name, ...snapshot.source }),
+            });
+            return {
+              catalog: new ScenarioCatalog(snapshot.catalog, source.systemName),
+              source: { catalog: name, ...snapshot.source },
+            };
+          })();
+          loaded.set(name, pending);
+        }
+        const result = await pending;
+        return { ...result.catalog.get(reference.id), source: { ...result.source } };
+      }
+      await use({ get });
     },
     replay: async (
       { catalogs, page, baseURL, serviceWorkers, scenarioReplayPolicy },
@@ -143,8 +155,7 @@ export function scenarioFixtures<const C extends CatalogSources>(options: {
             const examples = Object.fromEntries(
               await Promise.all(
                 Object.entries(references).map(
-                  async ([name, reference]) =>
-                    [name, await catalogs.get(reference.catalog, reference.id)] as const,
+                  async ([name, reference]) => [name, await catalogs.get(reference)] as const,
                 ),
               ),
             );

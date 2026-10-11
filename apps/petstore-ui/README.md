@@ -133,21 +133,28 @@ Import the application's native extended `test` and select exchanges inside the
 callback. `expect` remains Playwright's ordinary assertion API. Petstore's fixture
 module owns catalog selection, routing defaults, strict replay, and external image
 failures; the reusable package contains none of those application policies.
+Shared scenario definitions in `e2e/support/scenarios.ts` declare body types once
+so lookup and replay infer them. The local `CreatePetRequest` type reflects the
+API's optional status and tags fields. These are trusted TypeScript declarations;
+catalog validation remains active, but application body shapes are not validated
+at runtime.
 
 ```ts
-import type { PetInput } from '@response-capture/contracts/petstore';
 import { test, expect } from './support/fixtures';
+import { petScenarios } from './support/scenarios';
 
 test('create a pet', async ({ page, replay }) => {
   const { create, detail } = await replay.replace({
-    create: { catalog: 'pets', id: 'pet.create.success' },
-    detail: { catalog: 'pets', id: 'pet.read.after-order-deletion' },
+    create: petScenarios.create,
+    detail: petScenarios.detail,
   });
-  const input = create.request.body as unknown as PetInput;
+  const input = create.request.body; // CreatePetRequest
+  const saved = create.response.body; // Pet
   await page.goto('/pets/new');
   await page.getByLabel('Name', { exact: true }).fill(input.name);
   await page.getByLabel('Photo URLs (optional)').fill(input.photoUrls.join('\n'));
   await page.getByRole('button', { name: 'Save pet' }).click();
+  await expect(page).toHaveURL(`/pets/${saved.id}`);
   await expect(page.getByRole('heading', { name: input.name, exact: true })).toBeVisible();
   expect(create.calls()[0]?.body).toMatchObject({ name: input.name });
   detail.assertUsed();
@@ -162,7 +169,10 @@ follow-up exchanges rather than assuming replay simulates backend state.
 For client-only validation, `await replay.replace({})` and assert
 `expect(replay.requests()).toEqual([])`. Strict guarding requires no catalog fetch
 when no examples are selected. For data-only access, request `catalogs` and call
-`await catalogs.get('pets', 'pet.create.success')`; it installs no replay routes.
+`await catalogs.get(petScenarios.create)`; it installs no replay routes and infers
+the same body types. Ordinary `{ catalog, id }` references and the existing
+`catalogs.get('pets', 'pet.create.success')` form still return JSON, supporting
+incremental adoption.
 
 Native hooks and modifiers work without a declaration wrapper or private
 Playwright APIs. If a hook navigates, select scenarios in that hook before

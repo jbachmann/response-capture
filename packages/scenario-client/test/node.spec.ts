@@ -113,8 +113,12 @@ test('root entrypoint imports without Node, Playwright, or MSW dependencies', as
       return next(specifier, context);
     } });
     const client = await import('@response-capture/scenario-client');
-    if (typeof client.ScenarioCatalog !== 'function' || typeof client.ReplaySession !== 'function')
+    if (typeof client.ScenarioCatalog !== 'function' || typeof client.ReplaySession !== 'function'
+      || typeof client.scenarioReferences !== 'function')
       throw new Error('Missing root exports');
+    const reference = client.scenarioReferences('pets').define('read');
+    if (JSON.stringify(reference) !== '{"catalog":"pets","id":"read"}')
+      throw new Error('Typed references must remain ordinary data');
   `;
   await promisify(execFile)(process.execPath, ['--input-type=module', '-e', script], {
     cwd: process.cwd(),

@@ -8,6 +8,13 @@ export type {
 } from './catalog.js';
 export { resolveRouting, protectedRequest } from './routing.js';
 export type { SystemRouting } from './routing.js';
+export { scenarioReferences } from './references.js';
+export type {
+  ScenarioReference,
+  ScenarioReferences,
+  TypedScenarioReference,
+  ScenarioExampleFor,
+} from './references.js';
 export { ReplaySession } from './replay.js';
 export type {
   ReplayPolicy,
@@ -15,8 +22,6 @@ export type {
   ReplayRequest,
   ReplayResult,
   ObservedRequest,
-  ScenarioReference,
-  ScenarioReferences,
   ScenarioHandle,
   ScenarioHandles,
 } from './replay.js';

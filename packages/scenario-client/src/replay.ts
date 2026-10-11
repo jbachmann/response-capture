@@ -1,13 +1,10 @@
 import { bodyContains, validateScenario, type Json } from '@response-capture/contracts/scenarios';
 import type { ScenarioExample } from './catalog.js';
+import type { TypedScenarioReference } from './references.js';
 import { protectedRequest, resolveRouting, type SystemRouting } from './routing.js';
 
+export type { ScenarioReference, ScenarioReferences } from './references.js';
 export type ReplayPolicy = 'fallback' | 'error';
-export interface ScenarioReference<C extends string = string> {
-  catalog: C;
-  id: string;
-}
-export type ScenarioReferences<C extends string = string> = Record<string, ScenarioReference<C>>;
 export interface ReplayBinding {
   systemName: string;
   routing: SystemRouting;
@@ -28,11 +25,20 @@ export interface ObservedRequest {
   phase: number;
   matched: boolean;
 }
-export interface ScenarioHandle extends ScenarioExample {
+export interface ScenarioHandle<RequestBody = Json, ResponseBody = Json> extends ScenarioExample<
+  RequestBody,
+  ResponseBody
+> {
   calls(): readonly ObservedRequest[];
   assertUsed(): void;
 }
-export type ScenarioHandles<S> = { readonly [K in keyof S]: ScenarioHandle };
+export type ScenarioHandles<S> = {
+  readonly [K in keyof S]: S[K] extends ScenarioExample<infer Request, infer Response>
+    ? ScenarioHandle<Request, Response>
+    : S[K] extends TypedScenarioReference<infer Request, infer Response>
+      ? ScenarioHandle<Request, Response>
+      : ScenarioHandle;
+};
 export type ReplayResult =
   | { kind: 'fallback' }
   | { kind: 'abort' }
@@ -69,11 +75,13 @@ export class ReplaySession {
     );
   }
 
-  replace<const S extends Record<string, ScenarioExample>>(examples: S): ScenarioHandles<S> {
+  replace<const S extends Record<string, ScenarioExample<unknown, unknown>>>(
+    examples: S,
+  ): ScenarioHandles<S> {
     const selections = Object.entries(examples).map(([name, value]): Selection => {
-      const example = structuredClone(value);
-      const { source, ...scenario } = example;
+      const { source, ...scenario } = structuredClone(value);
       validateScenario(scenario);
+      const example = { ...scenario, source };
       const binding = Object.hasOwn(this.bindings, source.catalog)
         ? this.bindings[source.catalog]
         : undefined;

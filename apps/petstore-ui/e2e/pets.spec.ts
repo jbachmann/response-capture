@@ -1,14 +1,14 @@
-import type { Inventory, Pet, PetInput } from '@response-capture/contracts/petstore';
 import { test, expect } from './support/fixtures';
 import { expectAccessible } from './support/accessibility';
+import { petScenarios } from './support/scenarios';
 
 test('browse pets and inventory from catalog examples', async ({ page, replay }) => {
   const scenarios = await replay.replace({
-    list: { catalog: 'pets', id: 'pet.list.success' },
-    inventory: { catalog: 'pets', id: 'store.inventory.with-order' },
+    list: petScenarios.list,
+    inventory: petScenarios.inventory,
   });
-  const pets = scenarios.list.response.body as unknown as Pet[];
-  const inventory = scenarios.inventory.response.body as unknown as Inventory;
+  const pets = scenarios.list.response.body;
+  const inventory = scenarios.inventory.response.body;
   await page.goto('/pets');
   for (const pet of pets) {
     await expect(
@@ -30,8 +30,8 @@ test('empty inventory offers an explicit demo reset with accessible confirmation
   replay,
 }) => {
   await replay.replace({
-    list: { catalog: 'pets', id: 'pet.list.empty' },
-    inventory: { catalog: 'pets', id: 'store.inventory.empty' },
+    list: petScenarios.emptyList,
+    inventory: petScenarios.emptyInventory,
   });
   await page.goto('/pets');
   await expect(page.getByRole('heading', { name: 'No pets yet' })).toBeVisible();
@@ -50,11 +50,11 @@ test('create a pet using the recorded input and display its saved details', asyn
   replay,
 }) => {
   const { create, detail } = await replay.replace({
-    create: { catalog: 'pets', id: 'pet.create.success' },
-    detail: { catalog: 'pets', id: 'pet.read.after-order-deletion' },
+    create: petScenarios.create,
+    detail: petScenarios.detail,
   });
-  const input = create.request.body as unknown as PetInput;
-  const saved = create.response.body as unknown as Pet;
+  const input = create.request.body;
+  const saved = create.response.body;
   // Recordings come from independent provider tests: choose a coherent follow-up exchange.
   expect(detail.response.body).toEqual(create.response.body);
   await page.goto('/pets/new');
@@ -87,7 +87,7 @@ test('require a name without sending a create request', async ({ page, replay })
 
 test('show the recorded missing-pet error', async ({ page, replay }) => {
   const { missing } = await replay.replace({
-    missing: { catalog: 'pets', id: 'pet.read.missing' },
+    missing: petScenarios.missing,
   });
   await page.goto(`/pets/${missing.request.path.split('/').at(-1)}`);
   await expect(page.getByRole('alert')).toHaveText(
@@ -101,15 +101,15 @@ test('delete a pet and explicitly switch to the empty list recordings', async ({
   replay,
 }) => {
   const { detail } = await replay.replace({
-    detail: { catalog: 'pets', id: 'pet.read.after-order-deletion' },
+    detail: petScenarios.detail,
   });
-  const pet = detail.response.body as unknown as Pet;
+  const pet = detail.response.body;
   await page.goto(`/pets/${pet.id}`);
   await expect(page.getByRole('heading', { name: pet.name, exact: true })).toBeVisible();
   const { remove } = await replay.replace({
-    remove: { catalog: 'pets', id: 'pet.delete.success' },
-    list: { catalog: 'pets', id: 'pet.list.empty' },
-    inventory: { catalog: 'pets', id: 'store.inventory.empty' },
+    remove: petScenarios.remove,
+    list: petScenarios.emptyList,
+    inventory: petScenarios.emptyInventory,
   });
   await page.getByRole('button', { name: 'Delete pet' }).click();
   const confirmation = page.getByRole('region', { name: 'Confirm action' });
@@ -128,10 +128,10 @@ test('explain the recorded conflict when a pet has referencing orders', async ({
   replay,
 }) => {
   const { detail } = await replay.replace({
-    detail: { catalog: 'pets', id: 'pet.read.after-order-deletion' },
-    remove: { catalog: 'pets', id: 'pet.delete.referenced-by-order' },
+    detail: petScenarios.detail,
+    remove: petScenarios.removeConflict,
   });
-  const pet = detail.response.body as unknown as Pet;
+  const pet = detail.response.body;
   await page.goto(`/pets/${pet.id}`);
   await page.getByRole('button', { name: 'Delete pet' }).click();
   await page.getByRole('button', { name: 'Confirm', exact: true }).click();

@@ -9,11 +9,11 @@ optional peer; catalog-only consumers do not need Playwright or MSW.
 
 ## Entrypoints
 
-| Import                                         | Responsibility                                                                                |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `@response-capture/scenario-client`            | Validated `ScenarioCatalog` lookup, types, routing, and transport-independent `ReplaySession` |
-| `@response-capture/scenario-client/node`       | `fetchCatalog`, digest-verified snapshots, and a run-scoped snapshot broker                   |
-| `@response-capture/scenario-client/playwright` | `scenarioFixtures` and `scenarioGlobalSetup`                                                  |
+| Import                                         | Responsibility                                                                                           |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `@response-capture/scenario-client`            | Validated `ScenarioCatalog` lookup, typed references, routing, and transport-independent `ReplaySession` |
+| `@response-capture/scenario-client/node`       | `fetchCatalog`, digest-verified snapshots, and a run-scoped snapshot broker                              |
+| `@response-capture/scenario-client/playwright` | `scenarioFixtures` and `scenarioGlobalSetup`                                                             |
 
 The root entrypoint has no Node, Playwright, or MSW imports. Importing any
 entrypoint does not start services or fetch catalogs. Capture and submission
@@ -101,20 +101,81 @@ Outside Playwright, `fetchCatalog(baseUrl, source)` returns a `CatalogSnapshot`;
 construct `new ScenarioCatalog(snapshot.catalog, source.systemName)` to look up
 examples. This standalone path does not require global setup or a broker.
 
+## Declare application body types once
+
+Use `scenarioReferences()` in an application-owned module to bind a catalog alias
+and scenario IDs to your request and response types:
+
+```ts
+// e2e/support/scenarios.ts
+import type { Inventory, Pet, PetInput } from '@response-capture/contracts/petstore';
+import { scenarioReferences } from '@response-capture/scenario-client';
+
+// The API makes status and tags optional on create, supplying defaults when omitted.
+type CreatePetRequest = Omit<PetInput, 'status' | 'tags'> &
+  Partial<Pick<PetInput, 'status' | 'tags'>>;
+
+const pets = scenarioReferences('pets');
+export const petScenarios = {
+  create: pets.define<CreatePetRequest, Pet>('pet.create.success'),
+  detail: pets.define<null, Pet>('pet.read.after-order-deletion'),
+  list: pets.define<null, Pet[]>('pet.list.success'),
+  inventory: pets.define<null, Inventory>('store.inventory.with-order'),
+  remove: pets.define<null, null>('pet.delete.success'),
+};
+```
+
+Defining a reference performs no catalog fetching or routing. References are
+ordinary `{ catalog, id }` objects at runtime. The catalog alias must match a
+configured source; scenario IDs remain strings and are checked at lookup time.
+Both body types default to `Json` when omitted.
+
+The declarations are trusted application types, not runtime payload validators.
+Catalog structure and JSON validation remain active, but the package does not
+check whether a recorded body matches `Pet` or another declared application
+type. Ordinary interfaces work without JSON index signatures.
+
+Data-only lookup infers the same types without installing mocks:
+
+```ts
+const example = await catalogs.get(petScenarios.create);
+const input = example.request.body; // CreatePetRequest
+const saved = example.response.body; // Pet
+```
+
+The existing `catalogs.get('pets', 'pet.create.success')` form and plain reference
+objects continue returning JSON. Every lookup returns an independent example
+with provenance. `ScenarioExample<RequestBody, ResponseBody>` and
+`ScenarioHandle<RequestBody, ResponseBody>` default to JSON and can also carry
+application types through the portable `ReplaySession.replace()` API.
+Standalone `ScenarioCatalog.get(id)` returns JSON bodies. Observed requests,
+including `calls()` bodies, always remain JSON because incoming traffic is not
+proven to have the declared application shape.
+
 ## Replay selected exchanges
 
 ```ts
+import { petScenarios } from './support/scenarios';
+
 test('create a pet', async ({ page, replay }) => {
   const { create, detail } = await replay.replace({
-    create: { catalog: 'pets', id: 'pet.create.success' },
-    detail: { catalog: 'pets', id: 'pet.read.after-order-deletion' },
+    create: petScenarios.create,
+    detail: petScenarios.detail,
   });
-  // Use create.request.body as input, then perform your existing UI actions.
+  const input = create.request.body; // CreatePetRequest
+  const saved = create.response.body; // Pet
   await page.goto('/pets/new');
-  // Fill and submit the form using your application's fields.
-  // Keep existing assertions against the saved pet.
+  await page.getByLabel('Name', { exact: true }).fill(input.name);
+  await page.getByLabel('Photo URLs (optional)').fill(input.photoUrls.join('\n'));
+  await page.getByRole('button', { name: 'Save pet' }).click();
+  await expect(page).toHaveURL(`/pets/${saved.id}`);
+  create.assertUsed();
+  detail.assertUsed();
 });
 ```
+
+Typed and plain references may coexist in one replacement. Migrate only the
+scenarios whose bodies you want to use, keeping existing mocks and assertions.
 
 Await selection before the action that sends requests. If a `beforeEach` hook
 navigates, select inside that hook before navigation, or introduce a native

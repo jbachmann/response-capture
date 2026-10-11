@@ -1,6 +1,10 @@
 import { test as base, expect } from '@playwright/test';
 import { scenarioFixtures } from '@response-capture/scenario-client/playwright';
-import type { ScenarioHandles } from '@response-capture/scenario-client';
+import { scenarioReferences, type ScenarioHandles } from '@response-capture/scenario-client';
+
+interface NamedBody {
+  name: string;
+}
 
 const catalogApiUrl = process.env['HARNESS_CATALOG_URL']!;
 const appBase = base.extend<{ nativeValue: string }>({
@@ -58,9 +62,9 @@ const test = appBase.extend(
   }),
 );
 const references = {
-  pet: { catalog: 'pets', id: 'read' },
+  pet: scenarioReferences('pets').define<null, NamedBody>('read'),
   account: { catalog: 'accounts', id: 'read' },
-  remote: { catalog: 'remoteAccounts', id: 'read' },
+  remote: scenarioReferences('remoteAccounts').define<null, NamedBody>('read'),
 } as const;
 const journey = test.extend<{ selected: ScenarioHandles<typeof references> }>({
   selected: async ({ replay }, use) => {
@@ -71,6 +75,8 @@ const journey = test.extend<{ selected: ScenarioHandles<typeof references> }>({
 journey.describe('native grouping and hooks', () => {
   journey.beforeEach(async ({ page, selected }) => {
     expect(selected.pet.id).toBe('read'); // Selection precedes navigation through a fixture dependency.
+    expect(selected.pet.response.body.name).toBe('pets');
+    expect(selected.remote.response.body.name).toBe('accounts');
     await page.goto('/pets/new');
     const bodies: unknown = await page.evaluate(async () =>
       Promise.all([
@@ -106,9 +112,11 @@ journey.describe('native grouping and hooks', () => {
 
 test('mixed existing mocks and live calls', async ({ page, replay }) => {
   const { pet } = await replay.replace({ pet: references.pet });
-  await expect(replay.replace({ bad: { catalog: 'pets', id: 'unknown' } })).rejects.toThrow(
-    'Unknown',
-  );
+  await expect(
+    replay.replace({
+      bad: scenarioReferences('pets').define<null, NamedBody>('unknown'),
+    }),
+  ).rejects.toThrow('Unknown');
   await page.goto('/pets/new');
   const bodies: unknown = await page.evaluate(
     async (liveURL) =>
@@ -131,8 +139,14 @@ test('mixed existing mocks and live calls', async ({ page, replay }) => {
 });
 
 test('data-only access', async ({ catalogs }) => {
-  const first = await catalogs.get('pets', 'read');
-  first.response.body = null;
+  const first = await catalogs.get(references.pet);
+  expect(first.response.body.name).toBe(process.env['HARNESS_EXPECTED_PET'] ?? 'pets');
+  const originalSource = { ...first.source };
+  first.response.body.name = 'modified';
+  first.source.sha256 = 'modified';
+  const second = await catalogs.get(references.pet);
+  expect(second.source).toEqual(originalSource);
+  expect(second.response.body.name).toBe(process.env['HARNESS_EXPECTED_PET'] ?? 'pets');
   expect((await catalogs.get('pets', 'read')).response.body).toEqual({
     name: process.env['HARNESS_EXPECTED_PET'] ?? 'pets',
   });
@@ -170,7 +184,7 @@ test.fail('unused activation fails at teardown', async ({ replay }) => {
   expect(replay.requests()).toEqual([]);
 });
 test.fail('unknown scenario fails before the next action', async ({ replay }) => {
-  await replay.replace({ missing: { catalog: 'pets', id: 'unknown' } });
+  await replay.replace({ missing: scenarioReferences('pets').define<null, NamedBody>('unknown') });
   throw new Error('The next action must not run');
 });
 
@@ -209,5 +223,6 @@ const dataTest = appBase.extend(
   }),
 );
 dataTest('data access needs no routing', async ({ catalogs }) => {
-  expect((await catalogs.get('data', 'read')).response.body).toEqual({ name: 'pets' });
+  const example = await catalogs.get(scenarioReferences('data').define<null, NamedBody>('read'));
+  expect(example.response.body.name).toBe('pets');
 });

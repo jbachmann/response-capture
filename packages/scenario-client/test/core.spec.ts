@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import {
   ReplaySession,
   ScenarioCatalog,
+  scenarioReferences,
   type CatalogSnapshot,
   type SystemRouting,
   type ScenarioReferences,
@@ -414,6 +415,67 @@ test('catalog ownership, handles, and diagnostics cannot mutate active recording
   expect(create.calls()[0].body).toEqual({ name: 'Milo' });
   session.diagnostics().phases[0].selections[0].source.catalog = 'changed';
   expect(session.diagnostics().phases[0].selections[0].source.catalog).toBe('pets');
+  session.verify();
+});
+
+test('typed examples preserve replay fidelity and ownership while invalid replacements stay atomic', () => {
+  interface Input {
+    name: string;
+  }
+  interface Pet {
+    id: number;
+    name: string;
+  }
+  const reference = scenarioReferences('pets').define<Input, Pet>('create');
+  expect(Reflect.ownKeys(reference)).toEqual(['catalog', 'id']);
+  expect(structuredClone(reference)).toEqual({ catalog: 'pets', id: 'create' });
+  expect(JSON.stringify(reference)).toBe('{"catalog":"pets","id":"create"}');
+  const loaded = source([example()]);
+  const original = example(reference.id);
+  const recording: ScenarioExample<Input, Pet> = {
+    ...original,
+    request: { ...original.request, body: { name: 'Milo' } },
+    response: { ...original.response, body: { id: 1, name: 'Milo' } },
+    source: { catalog: reference.catalog, ...loaded.snapshot.source },
+  };
+  const session = new ReplaySession({
+    pets: { systemName: 'petstore-api', routing: loaded.routing },
+  });
+  const { create } = session.replace({ create: recording });
+  expect(() =>
+    session.replace({
+      invalid: {
+        ...recording,
+        response: { ...recording.response, body: { id: NaN, name: 'Milo' } },
+      },
+    }),
+  ).toThrow('JSON value');
+  expect(() =>
+    session.replace({
+      one: recording,
+      two: { ...recording, id: 'alternative' },
+    }),
+  ).toThrow('Ambiguous active scenarios');
+  recording.response.body.name = 'changed original';
+  create.response.body.name = 'changed handle';
+  expect(
+    session.handle({
+      method: 'POST',
+      url: `${baseURL}/pet`,
+      body: '{"name":"Milo"}',
+    }),
+  ).toEqual({
+    kind: 'response',
+    status: 201,
+    headers: { 'content-type': 'application/json; charset=utf-8' },
+    body: '{"id":1,"name":"Milo"}',
+  });
+  expect(create.source).toEqual({ catalog: 'pets', ...loaded.snapshot.source });
+  const history = create.calls();
+  history[0].body = null;
+  expect(create.calls()[0].body).toEqual({ name: 'Milo' });
+  expect(session.diagnostics().phases).toHaveLength(1);
+  create.assertUsed();
   session.verify();
 });
 

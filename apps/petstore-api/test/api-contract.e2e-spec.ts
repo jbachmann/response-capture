@@ -70,12 +70,22 @@ describe('API contract (e2e)', () => {
     await recorder.flush();
   });
 
-  it('serves Swagger UI and complete request, response, and error schemas', async () => {
-    await api()
-      .get('/docs/')
+  it('serves Scalar and complete request, response, and error schemas', async () => {
+    for (const path of ['/docs', '/docs/']) {
+      const ui = await api().get(path).expect(200);
+      expect(ui.headers['content-type']).toMatch(/html/);
+      expect(ui.text).toContain('src="/docs/scalar.js"');
+      expect(ui.text).toContain('"url": "/docs-json"');
+      expect(ui.text).toContain('"withDefaultFonts": false');
+      expect(ui.text).not.toContain('cdn.jsdelivr.net');
+    }
+    const bundle = await api()
+      .get('/docs/scalar.js')
       .expect(200)
-      .then((r) => expect(r.text).toContain('swagger-ui'));
-    await api().get('/docs/swagger-ui-init.js').expect(200);
+      .expect('Content-Type', /javascript/);
+    expect(bundle.text).toContain('createApiReference');
+    await api().get('/docs/swagger-ui-init.js').expect(404);
+    await api().get('/docs-yaml').expect(200).expect('Content-Type', /yaml/);
     const document = (await api().get('/docs-json').expect(200)).body;
     const schemas = document.components.schemas;
     expect(schemas.CreatePetDto.required).toEqual(expect.arrayContaining(['name', 'photoUrls']));

@@ -149,7 +149,7 @@ suites record 55 scenarios across 14 test cases: pet CRUD, order defaults and
 CRUD, inventory, relationship conflicts, persistence, repeatable training seed
 and reset operations, and malformed or maximum safe IDs. It includes
 201/400/404/409 interactions, list arrays and 204 deletion. Query-dependent
-filter tests and non-JSON root/Swagger UI responses remain outside recording
+filter tests and non-JSON root/Scalar responses remain outside recording
 because version 1 does not model these interactions.
 
 Integration tests open localhost sockets; restricted execution environments

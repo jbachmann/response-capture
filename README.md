@@ -26,7 +26,7 @@ npm run dev
 This starts the Petstore API at http://localhost:3000, the catalog API at
 http://localhost:3001, the Petstore UI at http://localhost:4200, and the catalog UI
 at http://localhost:4201.
-Swagger UI is at http://localhost:3000/docs and OpenAPI JSON at
+Scalar is at http://localhost:3000/docs and OpenAPI JSON at
 http://localhost:3000/docs-json. Stop all servers with Ctrl+C.
 
 Run an application independently:

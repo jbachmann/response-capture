@@ -26,9 +26,10 @@ SQLite uses Node's built-in `node:sqlite` `DatabaseSync`, with no ORM or native
 SQLite dependency. Node 24 emits an `ExperimentalWarning` for SQLite; this is
 expected and does not prevent startup. See the [Node SQLite documentation](https://nodejs.org/docs/latest-v24.x/api/sqlite.html).
 
-Swagger UI is available at **http://localhost:3000/docs** and the OpenAPI JSON
+Scalar is available at **http://localhost:3000/docs** and the OpenAPI JSON
 at **http://localhost:3000/docs-json**. Both production and end-to-end tests use
 the same validation and documentation setup.
+Scalar's browser bundle is served locally, so the documentation does not require a CDN connection.
 
 ## Database configuration
 
@@ -95,7 +96,7 @@ Delete the referencing orders before deleting that pet.
 
 These unauthenticated endpoints are intended for classroom exercises. Both
 replace the current database contents and reset pet and order IDs. They take
-no request body and are available in Swagger UI under `training`.
+no request body and are available in Scalar under `training`.
 
 ```sh
 # Replace existing data with the same static dataset each time
@@ -159,7 +160,7 @@ npm run lint
 End-to-end tests use isolated temporary SQLite files, clean them up, and verify
 persistence after application shutdown and reopening. Feature suites share
 application setup and cover CRUD, filters, inventory, defaults, relationship
-conflicts, validation, and Swagger UI and request/response schemas. Repository
+conflicts, validation, and Scalar and request/response schemas. Repository
 tests exercise serialization, constraints, and shared transactions directly.
 
 This API includes no user accounts, authentication, uploads, bulk operations,

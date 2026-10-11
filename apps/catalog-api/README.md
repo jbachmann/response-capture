@@ -16,9 +16,10 @@ files and journals are gitignored. No existing catalogs are imported automatical
 
 ## Submit and retrieve catalogs
 
-Swagger UI is available at [http://localhost:3001/docs](http://localhost:3001/docs).
+Scalar is available at [http://localhost:3001/docs](http://localhost:3001/docs).
 Use it to explore and try the endpoints. The OpenAPI document is available at
 `/docs-json` (JSON) and `/docs-yaml` (YAML). These routes use the same port as the API.
+Scalar's browser bundle is served locally, so the documentation does not require a CDN connection.
 
 ```sh
 curl -i -X PUT http://localhost:3001/catalog-submissions \

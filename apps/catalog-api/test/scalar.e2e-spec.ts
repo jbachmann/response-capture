@@ -4,7 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/configure-app.js';
 
-describe('Swagger documentation', () => {
+describe('Scalar documentation', () => {
   let app: NestExpressApplication;
 
   beforeEach(async () => {
@@ -22,15 +22,21 @@ describe('Swagger documentation', () => {
     vi.unstubAllEnvs();
   });
 
-  it('serves Swagger UI and its local assets', async () => {
-    const ui = await request(app.getHttpServer()).get('/docs/').expect(200);
-    expect(ui.text).toContain('swagger-ui');
-    await request(app.getHttpServer())
-      .get('/docs/swagger-ui-bundle.js')
+  it('serves Scalar with a local browser bundle', async () => {
+    for (const path of ['/docs', '/docs/']) {
+      const ui = await request(app.getHttpServer()).get(path).expect(200);
+      expect(ui.headers['content-type']).toMatch(/html/);
+      expect(ui.text).toContain('src="/docs/scalar.js"');
+      expect(ui.text).toContain('"url": "/docs-json"');
+      expect(ui.text).toContain('"withDefaultFonts": false');
+      expect(ui.text).not.toContain('cdn.jsdelivr.net');
+    }
+    const bundle = await request(app.getHttpServer())
+      .get('/docs/scalar.js')
       .expect(200)
       .expect('Content-Type', /javascript/);
-    const init = await request(app.getHttpServer()).get('/docs/swagger-ui-init.js').expect(200);
-    expect(init.text).toContain('/catalog-submissions');
+    expect(bundle.text).toContain('createApiReference');
+    await request(app.getHttpServer()).get('/docs/swagger-ui-bundle.js').expect(404);
   });
 
   it('documents submission requirements, parameters, and responses', async () => {

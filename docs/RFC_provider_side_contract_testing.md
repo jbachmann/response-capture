@@ -163,33 +163,28 @@ can retain their order. Bodyless exchanges use `null`.
 
 ### Publish: catalogs become available to consumers
 
-Capture and submission are separate steps. The provider can produce a local
-catalog without a running catalog service; a failed upload can be retried using
-that file.
+Publication is the handoff from provider testing to consumer verification. The
+provider makes a catalog of tested examples available in a shared location, where
+consumers can retrieve it independently of the provider's test run or a running
+provider application. One published catalog can serve many consumers, each with
+its own expectations.
 
-With workspace dependencies installed, the prototype's commands run from the
-repository root:
+Capture and publication are separate steps. A passing capture run produces a
+local artifact that can be inspected and retained before it is shared. If
+publication fails, the provider can retry using that artifact without repeating
+the tests.
 
-```sh
-npm run scenarios:capture
-# With the catalog API running, publish under the main alias.
-CATALOG_ALIAS=main npm run scenarios:submit
-```
+Consumers need to identify both the provider and the catalog they want to check.
+Teams agree on a selection policy, such as using the latest published catalog or
+one labeled for a branch or revision. That choice determines which recorded
+behavior the consumer evaluates; a revision label alone does not establish which
+code produced the catalog.
 
-For local use, start the catalog API in another terminal with
-`npm run dev --workspace=catalog-api`. The submission sends the captured catalog,
-provider identity (`petstore-api`), a Git commit label, and an optional alias to
-`PUT /catalog-submissions`.
-
-Consumers retrieve the latest submitted catalog with
-`GET /catalogs/petstore-api`, or select an alias or commit with
-`GET /catalogs/petstore-api/main`. Here, “latest” means latest submission. A missing
-catalog returns `404`.
-
-The central location gives teams a shared place to publish, discover, and inspect
-provider examples. The prototype's catalog browser helps authors find stable IDs
-and examine exchanges. An artifact repository could serve the same distribution
-role; the continuously running catalog API is one implementation choice.
+The shared location also supports discovery: consumers can inspect recorded
+exchanges, find stable scenario IDs, and choose the cases relevant to their
+dependencies. A catalog service or an artifact repository can fulfill this role.
+The essential requirement is that teams can publish, find, and retrieve the
+catalogs they intend to use.
 
 ### Verify: consumers check their own expectations
 

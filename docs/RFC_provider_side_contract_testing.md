@@ -361,13 +361,42 @@ The recommended enhancements would be:
 
 Keep the existing snapshots for each consumer test run. Workers and retries already reuse the same loaded catalog for a source, even if the service changes during the run. Digest verification checks that a snapshot still matches its saved digest; it does not prove who produced or published the catalog. [D12]
 
-**Retain strict replay as an explicit isolated-test profile.** The reusable library defaults to fallback, allowing gradual composition with existing mocks and live calls. Petstore tests opt into strict routing. Strictness applies only to configured origins and protected path roots, so missing routing declarations can leave network traffic unguarded. Page routing, service-worker blocking and handler order are part of the integration boundary. A strict replay test proves request selection within that boundary, not universal provider independence for arbitrary application architectures. [D13, D18, D23]
+**Use strict replay explicitly for tests intended to run without the provider.** The library's default policy, `fallback`, returns recorded responses for selected scenarios and passes unmatched requests to existing mocks or the real network. This lets authors add replay to an existing test suite gradually. [D13, D18]
 
-**Separate fixture selection from request compatibility checking.** Replay currently chooses one active scenario per method and concrete URL, rejects queries and malformed JSON, and checks only optional `bodyContains`. It ignores request headers and unhinted body fields. Two scenarios for the same route are ambiguous even if their hints differ. Recommend preserving explicit selection while evaluating request schemas and required protocol checks, or a dedicated consumer-driven contract layer. Exact equality with the recorded request body is a useful baseline experiment but may reject valid optional fields and variable values. Richer matching needs explicit semantics and provider-side verification. [D06, D14–D15]
+Strict replay, configured with `scenarioReplayPolicy: 'error'`, blocks unmatched requests to the APIs the test declares. The Petstore tests use this policy. Authors specify each API's origin (protocol, host and port) and protected path roots. For example, protecting `/pet` also protects `/pet/1`, but requests to another host or an undeclared API path still pass through. [D13]
 
-**Keep explicit phases; make coherent journeys reviewable.** All selected scenarios in every phase must be used at least once. Repeated requests receive the same response; counts and sequencing are not automatically enforced. Independent scenarios can describe mutually inconsistent provider states. Recommend named journey fixtures with cross-scenario checks for identities and relationships, plus explicit request assertions where counts or sequencing matter. Avoid building a stateful backend simulator unless experiments show that static phases cannot meet the actual UI requirement. [D16–D17, D20]
+The current adapter intercepts requests from the test's Playwright page. It requires service workers to be blocked so they cannot bypass that interception. Other page request handlers registered later can take priority over replay, so authors must also account for overlapping mocks. Requests from other pages or server-side code need separate handling. [D18, D23]
 
-**Treat the narrow wire format as a prototype constraint.** JSON-only bodies, concrete paths, unsupported queries, omitted request headers and content-type-only response headers make implementation manageable, but exclude material API behavior. The observed Petstore filter tests already use queries and remain unrecorded. Future format changes need version negotiation and migration plans; accepting unknown fields silently would weaken diagnostics. The intrinsic limitation is a finite set of scenarios, even if the format becomes richer. [D06–D08, D20]
+A passing strict replay test therefore supports provider independence only for the tested requests covered by its routing rules and interception setup. Authors must cover every provider request used by the journey before treating it as a test that runs independently of that provider. [D13, D18, D23]
+
+**Choose scenarios explicitly, and check request compatibility separately.** Selecting a scenario tells replay which recorded response to return. It does not establish that the provider would accept the request sent by the consumer. Replay matches the HTTP method and URL path on the configured origin, rejects query parameters and malformed JSON, and applies any `bodyContains` hint. [D14]
+
+A `bodyContains` hint checks only the specified body fields. For example, a hint requiring `name: 'Milo'` can pass even when the request also contains an invalid `status`. Other body fields and request headers are not checked. The recorded response can therefore be returned for a request that would fail against the provider. [D06, D14, E4]
+
+Authors must select only one scenario for each method and URL in a phase. Two scenarios for `POST /pet` cannot be active together, even if they have different body hints: the library rejects that selection rather than using the hints to choose a response. [D15]
+
+Keep this explicit selection model, but evaluate additional checks for compatibility. Options include validating requests against API schemas, checking required headers, or using consumer-driven contracts to verify consumer requirements against the provider. Comparing the entire request body with the recorded body is a useful starting experiment, though it can reject valid requests with different values or additional optional fields. Any more flexible matching rules should state exactly what they accept and be verified against provider behavior.
+
+**Keep explicit phase changes, and check that the selected scenarios fit the journey.** Each call to `replay.replace()` starts a phase with a new set of available scenarios. Every selected scenario must be requested at least once while that phase is active. Selecting a new phase does not erase an unused selection from an earlier phase. Repeated matching requests receive the same recorded response; replay does not check exact request counts or their order within a phase. [D16–D17]
+
+Scenarios from separate provider tests may describe different data. For example, a create scenario might return pet 1 named Milo, while a detail scenario for pet 1 returns Luna because its provider test used different setup data. Both scenarios can be valid individually but inconsistent when used in the same consumer journey. Authors need to check that the selected requests and responses describe compatible resources and relationships. [D16, D20]
+
+The recommendation is to collect scenarios and their consistency checks in named, reusable journey fixtures, such as a fixture for creating a pet and viewing its details. A fixture could check that the create and detail responses agree, or that an order refers to the expected pet. Tests should also assert request counts and order when those are requirements of the journey.
+
+Continue using explicitly selected responses for each phase. Consider a backend simulator that tracks and updates state only if experiments show that these phases cannot represent the UI journeys that need testing.
+
+**Treat the narrow wire format as a prototype constraint.** The current scenario format records only part of an HTTP exchange:
+
+- Bodies must be JSON. File uploads and other non-JSON payloads cannot be captured by the supplied adapter.
+- Paths identify specific resources, such as `/pet/1`, rather than reusable patterns such as `/pet/:id`.
+- Query parameters are unsupported. The Petstore provider tests exercise filters such as `/pet/findByStatus?status=available`, but those requests are left unmarked and do not appear in the catalog.
+- Request headers are not stored, and only the response's `content-type` header is retained. Replay therefore cannot check recorded authorization headers or reproduce response headers such as cookies or `Location`.
+
+These restrictions simplify capture and replay, but leave some API behavior outside the scenarios that consumers can test. They are choices in this prototype's format and adapter, rather than requirements of the overall approach. [D06–D08, D20]
+
+Future format versions could support more of these exchanges. Recorders and consumers would need to agree on supported versions, and existing catalogs would need either conversion or continued support. Unknown structural fields should produce clear errors so that a consumer does not silently ignore information it cannot interpret. [D07]
+
+A richer format would still contain only the scenarios authors chose to record. It could represent more kinds of requests, but passing those scenarios would not establish compatibility for every input, provider state or request sequence. [D20]
 
 ## 4. Guarantees, limitations, and alternatives
 

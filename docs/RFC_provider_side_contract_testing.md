@@ -56,7 +56,70 @@ sequenceDiagram
   U->>U: Assert UI behavior and verify selected scenarios were used
 ```
 
-The current implementation publishes only after the capture runner reports success. It does not require a catalog server during capture. Upload and first consumer lookup each need the catalog service. After a source is loaded, workers and retries share its snapshot. Different sources resolve independently on first use; they do not form a simultaneous, cross-provider release snapshot. [D02–D05, D10, D21]
+The current prototype publishes only after the capture runner reports success. It does not require a catalog server during capture. Upload and first consumer lookup each need the catalog service. After a source is loaded, workers and retries share its snapshot. Different sources resolve independently on first use; they do not form a simultaneous, cross-provider release snapshot. [D02–D05, D10, D21]
+
+### Capturing a scenario on the provider side
+
+The following excerpts use the prototype's current adapters to make the pattern concrete. In a provider test, the author assigns a stable scenario ID to a selected request and keeps the usual assertions. Here, `usePetstoreFixture()` supplies a real application with a fresh database and registers its setup and teardown hooks:
+
+```ts
+// Provider test excerpt, using the existing Petstore fixture.
+import { expect, it } from 'vitest';
+import { capture } from '@response-capture/scenario-recorder/supertest';
+import { pet, usePetstoreFixture } from './support/petstore-fixture.js';
+
+const fixture = usePetstoreFixture();
+
+it('creates a pet with defaults', async () => {
+  const response = await fixture
+    .api()
+    .post('/pet')
+    .send(pet)
+    .use(
+      capture('pet.create.success', {
+        title: 'Create a pet with defaults',
+        requestMatch: { bodyContains: { name: 'Milo' } },
+      }),
+    )
+    .expect(201);
+
+  expect(response.body).toEqual({
+    ...pet,
+    id: 1,
+    tags: [],
+    status: 'available',
+  });
+});
+```
+
+The marker selects the exchange for capture; it does not replace the server or the assertions. The optional matching hint constrains later replay and must match the captured request. Enable capture through a dedicated runner configuration that retains the provider's existing E2E configuration:
+
+```ts
+// vitest.config.capture.ts
+import { defineConfig, mergeConfig } from 'vitest/config';
+import { scenarioCapture } from '@response-capture/scenario-recorder/vitest';
+import e2e from './vitest.config.e2e.js';
+
+export default mergeConfig(
+  e2e,
+  defineConfig({
+    test: scenarioCapture({ outputDirectory: 'artifacts/api-scenarios' }),
+  }),
+);
+```
+
+The runner writes the current-run catalog only after the tests and required teardown pass. Unmarked setup requests are excluded, and markers are inert in ordinary test runs. Publication to the distribution service is a separate action. With workspace dependencies built, the existing repository workflow is:
+
+```sh
+# From the repository root, run the existing marked provider suite.
+npm run scenarios:capture --workspace=@response-capture/petstore-api
+# Start the local catalog service in another terminal.
+npm run dev --workspace=catalog-api
+# Once the service is ready, submit the captured catalog explicitly.
+npm run scenarios:submit --workspace=@response-capture/petstore-api
+```
+
+These are excerpts of the existing workflow, not additional tests to add alongside its scenario IDs; IDs must be unique within a capture run. The fixture, provider assertions, capture configuration and submission script are referenced in appendix decisions D01–D05, D11 and D20.
 
 ### Compact recorded scenario
 
@@ -88,11 +151,110 @@ This is a shortened illustration of `pet.create.success`, not the exact walkthro
 
 The wire schema validates JSON values and exchange structure. It does not validate `Pet`, `PetInput`, business rules, or consumer expectations. Optional TypeScript body declarations are trusted application assertions about data, with no corresponding runtime validator. [D06–D08]
 
-### Representative consumer journey
+### Consuming scenarios on the consumer side
 
-For creation, the consumer selects `pet.create.success` and a compatible detail scenario, fills the form, clicks Save, and checks navigation and saved details. The supplied browser test explicitly checks that the independently recorded detail response equals the create response. For deletion, it first selects a detail scenario, then replaces the phase with deletion, empty-list, and empty-inventory scenarios before confirming deletion. The library performs no simulated database update; the author supplies follow-up scenarios. [D16, E3]
+The consumer declares where to obtain a catalog and which API requests replay should guard. The alias `pets` below is a local name for the source, while `petstore-api` identifies the published provider. The `ui` origin resolves to the test's configured UI origin:
 
-The demonstration uses NestJS and isolated SQLite databases for provider tests; Supertest markers and a Vitest adapter for capture; a NestJS/SQLite catalog; Angular for both the consumer and catalog browser; and Playwright for replay. Catalog UI discovers systems and versions, filters metadata, and displays exchanges. It neither executes scenarios nor certifies coverage or compatibility. [D01, D09, D19]
+```ts
+// e2e/support/fixtures.ts — minimal replay integration.
+import { test as base, expect } from '@playwright/test';
+import { scenarioFixtures } from '@response-capture/scenario-client/playwright';
+
+export const test = base.extend(
+  scenarioFixtures({
+    catalogs: {
+      pets: {
+        catalogApiUrl: 'http://localhost:3001',
+        systemName: 'petstore-api',
+        selection: { latest: true },
+        routing: { origin: 'ui', protectedPaths: ['/pet', '/store', '/training'] },
+      },
+    },
+  }),
+);
+
+test.use({ scenarioReplayPolicy: 'error' });
+export { expect };
+```
+
+Strict replay rejects unmatched requests within these API boundaries. Latest is convenient for local exploration; version and artifact identity choices are discussed in D10–D12. Start the run-scoped snapshot loader through global setup, and register it in the existing Playwright configuration alongside the application's server and project settings:
+
+```ts
+// e2e/global-setup.ts
+import { scenarioGlobalSetup } from '@response-capture/scenario-client/playwright';
+
+export default scenarioGlobalSetup({ outputDirectory: 'test-results/catalog' });
+```
+
+```ts
+// playwright.config.ts — excerpt showing the required settings.
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  globalSetup: './e2e/global-setup.ts',
+  use: { baseURL: 'http://localhost:4202', serviceWorkers: 'block' },
+});
+```
+
+Merge these settings with the application's existing configuration; preserve its other `use` settings and compose any existing global setup. The prototype already configures this setup and starts its UI server. The loader fetches each requested catalog source once per run and shares its snapshot across workers and retries. [D12, D13, D18]
+
+Application-owned references give the scenario IDs names and body types for test authoring. These types are trusted declarations, not runtime validation of provider payloads:
+
+```ts
+// e2e/support/scenarios.ts — excerpt of the application's references.
+import type { Pet, PetInput } from '@response-capture/contracts/petstore';
+import { scenarioReferences } from '@response-capture/scenario-client';
+
+type CreatePetRequest = Omit<PetInput, 'status' | 'tags'> &
+  Partial<Pick<PetInput, 'status' | 'tags'>>;
+
+const pets = scenarioReferences('pets');
+export const petScenarios = {
+  create: pets.define<CreatePetRequest, Pet>('pet.create.success'),
+  detail: pets.define<null, Pet>('pet.read.after-order-deletion'),
+};
+```
+
+The consumer test selects its scenarios **before** triggering requests. This creation journey uses the captured input to fill the form and the captured response to assert the saved details:
+
+```ts
+// e2e/pets.spec.ts — creation journey excerpt.
+import { test, expect } from './support/fixtures';
+import { petScenarios } from './support/scenarios';
+
+test('create a pet and show its saved details', async ({ page, replay }) => {
+  const { create, detail } = await replay.replace({
+    create: petScenarios.create,
+    detail: petScenarios.detail,
+  });
+  const input = create.request.body;
+  const saved = create.response.body;
+
+  // The recordings are independent: check that the follow-up is coherent.
+  expect(detail.response.body).toEqual(saved);
+
+  await page.goto('/pets/new');
+  await page.getByLabel('Name', { exact: true }).fill(input.name);
+  await page.getByLabel('Photo URLs (optional)').fill(input.photoUrls.join('\n'));
+  await page.getByRole('button', { name: 'Save pet' }).click();
+
+  await expect(page).toHaveURL(`/pets/${saved.id}`);
+  await expect(page.getByRole('status')).toHaveText('Pet saved.');
+  await expect(page.getByRole('heading', { name: saved.name, exact: true })).toBeVisible();
+  expect(create.calls()[0]?.body).toMatchObject({
+    name: input.name,
+    photoUrls: input.photoUrls,
+  });
+  create.assertUsed();
+  detail.assertUsed();
+});
+```
+
+The detail scenario was captured in a separate provider test after order deletion; the consumer reuses it because its response describes the same saved pet. Selecting it does not create provider state. Replay fulfills the selected requests, while the consumer assertions check navigation, rendering and the observed request fields. Teardown also verifies that every selection was used. For data-only consumption, `await catalogs.get(petScenarios.create)` returns the recording and provenance without installing replay handlers. [D08, D14, D16–D18, E3]
+
+For a later phase, another `await replay.replace({ ... })` replaces the entire active set. The existing deletion journey first selects a detail scenario, then replaces it with deletion, empty-list and empty-inventory scenarios before confirming deletion. The author supplies these coherent follow-up scenarios; the library performs no simulated database update. [D16, E3]
+
+The prototype uses NestJS and isolated SQLite databases for provider tests; Supertest markers and a Vitest adapter for capture; a NestJS/SQLite catalog; Angular for both the consumer and catalog browser; and Playwright for replay. Catalog UI discovers systems and versions, filters metadata, and displays exchanges. It neither executes scenarios nor certifies coverage or compatibility. [D01, D09, D19]
 
 ## 3. Architectural decisions
 

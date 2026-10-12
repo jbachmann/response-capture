@@ -62,8 +62,12 @@ export function startHttpCapture(): () => void {
     const exchange: { marked: MarkedRequest; request?: RequestExample } = { marked };
     exchanges.set(requestId, exchange);
     return observe(marked, async () => {
-      if (raw.path.includes('?') || raw.path.includes('#'))
-        throw new Error('query strings and fragments are unsupported');
+      if (raw.path.includes('#')) throw new Error('fragments are unsupported');
+      const url = new URL(request.url);
+      const query: Record<string, string[]> = Object.create(null);
+      for (const [key, value] of url.searchParams) {
+        (query[key] ??= []).push(value);
+      }
       if (request.headers.has('transfer-encoding'))
         throw new Error('streaming request bodies are unsupported');
       const body = await jsonBody(request, marked.scope.signal);
@@ -71,7 +75,8 @@ export function startHttpCapture(): () => void {
         throw new Error('streaming request bodies are unsupported');
       exchange.request = {
         method: request.method as RequestExample['method'],
-        path: raw.path,
+        path: raw.path.split('?')[0],
+        ...(Object.keys(query).length ? { query } : {}),
         body,
       };
     });

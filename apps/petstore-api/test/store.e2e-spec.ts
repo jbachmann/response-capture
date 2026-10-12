@@ -6,7 +6,7 @@ describe('store behavior (e2e)', () => {
   const { api } = fixture;
 
   it('lists all persisted orders newest first and excludes deleted orders', async () => {
-    await api().get('/store/order').expect(200).expect([]);
+    await api().get('/store/order').use(capture('store.order.list.empty')).expect(200).expect([]);
     const savedPet = (await api().post('/pet').send(pet).expect(201)).body;
     const first = (await api().post('/store/order').send({ petId: savedPet.id }).expect(201)).body;
     const second = (
@@ -21,7 +21,11 @@ describe('store behavior (e2e)', () => {
         })
         .expect(201)
     ).body;
-    await api().get('/store/order').expect(200).expect([second, first]);
+    await api()
+      .get('/store/order')
+      .use(capture('store.order.list.success'))
+      .expect(200)
+      .expect([second, first]);
     await fixture.reopen();
     await api().get('/store/order').expect(200).expect([second, first]);
     await api().delete(`/store/order/${second.id}`).expect(204);
@@ -35,6 +39,17 @@ describe('store behavior (e2e)', () => {
       type: 'array',
       items: { $ref: '#/components/schemas/OrderDto' },
     });
+  });
+
+  it('creates an order with UI quantity and ISO shipping fields', async () => {
+    const savedPet = (await api().post('/pet').send(pet).expect(201)).body;
+    const input = { petId: savedPet.id, quantity: 2, shipDate: '2026-10-10T12:00:00.000Z' };
+    await api()
+      .post('/store/order')
+      .send(input)
+      .use(capture('store.order.create.with-shipping'))
+      .expect(201)
+      .expect({ ...input, id: 1, status: 'placed', complete: false });
   });
 
   it('creates and deletes orders, protects pets, and leaves pet status unchanged', async () => {

@@ -104,7 +104,6 @@ it('observes serialized JSON, snapshots before assertions mutate bodies, and ign
 });
 
 it.each([
-  ['/echo?query=1', /query strings/],
   ['/text', /content-type/],
   ['/gzip', /compressed/],
   ['/redirect', /redirects|multiple HTTP/],
@@ -123,6 +122,31 @@ it.each([
     expect(() => session.finish()).toThrow(error);
   },
 );
+
+it('captures decoded query values in repeated-key order and omits query for queryless requests', async () => {
+  const session = new CaptureSession();
+  await withCaptureSession(session, async () => {
+    await request(app)
+      .get('/echo?tags=cute%20cat&tags=a%2Bb&empty=&bare&__proto__=safe&tags=last+tag')
+      .use(capture('query'))
+      .expect(201);
+    await request(app).get('/echo').use(capture('queryless')).expect(201);
+  });
+  expect(session.finish().map((scenario) => scenario.request)).toEqual([
+    {
+      method: 'GET',
+      path: '/echo',
+      body: null,
+      query: {
+        tags: ['cute cat', 'a+b', 'last tag'],
+        empty: [''],
+        bare: [''],
+        ['__proto__']: ['safe'],
+      },
+    },
+    { method: 'GET', path: '/echo', body: null },
+  ]);
+});
 
 it('isolates concurrent sessions and snapshots metadata at the marker', async () => {
   const sessions = await Promise.all(

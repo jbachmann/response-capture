@@ -154,7 +154,7 @@ it.each([
   ],
   [
     'capture validation',
-    `it('query', async () => { await request(app).get('/example?query=1').use(capture('one')).expect(200); });`,
+    `it('unbuffered', async () => { await request(app).get('/example').use(capture('one')).buffer(false).expect(200); });`,
   ],
   [
     'caught capture validation',

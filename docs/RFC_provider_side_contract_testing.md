@@ -285,7 +285,7 @@ test('create a pet and show its saved details', async ({ page, replay }) => {
     create: petScenarios.create,
     detail: petScenarios.detail,
   });
-  
+
   const input = create.request.body;
   const saved = create.response.body;
 
@@ -311,19 +311,55 @@ test('create a pet and show its saved details', async ({ page, replay }) => {
 });
 ```
 
-The detail scenario was captured in a separate provider test after order deletion; the consumer reuses it because its response describes the same saved pet. Selecting it does not create provider state. Replay fulfills the selected requests, while the consumer assertions check navigation, rendering and the observed request fields. Teardown also verifies that every selection was used. For data-only consumption, `await catalogs.get(petScenarios.create)` returns the recording and provenance without installing replay handlers. [D08, D14, D16–D18, E3]
+The create and detail scenarios come from different provider tests. The detail response was recorded after an order was deleted, but it describes the same pet returned by the create scenario. The consumer test checks that the two responses agree before using them together. [D16, E3]
 
-For a later phase, another `await replay.replace({ ... })` replaces the entire active set. The existing deletion journey first selects a detail scenario, then replaces it with deletion, empty-list and empty-inventory scenarios before confirming deletion. The author supplies these coherent follow-up scenarios; the library performs no simulated database update. [D16, E3]
+When the UI sends a selected request, replay returns its recorded response. The test's assertions check the resulting navigation, displayed content and request fields. At the end of the test, the replay fixture checks that every selected scenario was requested at least once. [D14, D17–D18]
+
+To read a scenario without replaying requests, use `await catalogs.get(petScenarios.create)`. This returns the recorded exchange and information about its catalog source, without installing network handlers. [D08, D18]
+
+A test can change the available responses as the journey progresses. Calling `await replay.replace({ ... })` replaces all currently selected scenarios. The deletion journey uses this sequence:
+
+1. Select the detail scenario and open the pet's page.
+2. Before confirming deletion, select the deletion, empty-list and empty-inventory scenarios.
+3. Confirm deletion. The UI receives the recorded deletion response, then the empty results when it loads the list and inventory.
+
+The test author must choose follow-up scenarios that fit the journey. Replay does not maintain a simulated database or derive the empty results from the deletion request. [D16, E3]
 
 The prototype uses NestJS and isolated SQLite databases for provider tests; Supertest markers and a Vitest adapter for capture; a NestJS/SQLite catalog; Angular for both the consumer and catalog browser; and Playwright for replay. Catalog UI discovers systems and versions, filters metadata, and displays exchanges. It neither executes scenarios nor certifies coverage or compatibility. [D01, D09, D19]
 
-## 3. Architectural decisions
+## 3. Architectural suggestions
 
-**Keep selective capture and a whole-run success gate.** Markers retain native provider tests and exclude setup requests. A successful response alone is insufficient: assertions, teardown, observation validation, and the final runner outcome matter. Expected HTTP errors can be valuable passing scenarios. Authors still choose how thoroughly to assert them. Retry attempts and skipped tests are handled; competing independent capture commands need separate directories. [D01–D03]
+**Keep selective capture and require the entire capture run to pass before publishing.** Authors mark the requests they want in the catalog and leave setup requests unmarked. The tests keep their normal request chains and assertions. The recorder publishes a catalog only after the tests, required teardown and captured-exchange validation to pass. Receiving an HTTP response is only one step; a later assertion or teardown failure will prevent publication. [D01–D03]
 
-**Keep explicit capture and submission, but bind identity at capture.** This separation supports offline capture and retryable upload. Currently upload reads whatever `catalog.json` exists and labels it with the submitting checkout's HEAD and branch. A stale file can be relabeled; a failed new capture leaves the previous successful file available for submission. No dirty-worktree or freshness check prevents this. Recommended changes are a capture manifest containing revision, dirty status, test selection, runner/configuration identity and artifact digest, with CI eligibility rules enforced before publication. The organization must decide whether dirty local captures are usable for exploration but ineligible for release evidence. [D04, D11]
+An error response can be a useful scenario. For example, a test that expects and verifies a `404` response can pass and contribute that exchange to the catalog. The confidence it provides depends on what the author asserts about the response. [D01–D02]
 
-**Use immutable artifact identity for compatibility evidence.** Today the same system/commit pair replaces its entire catalog; even a full hash selector does not freeze content. Aliases and latest reflect submission order, and alias/hash collisions select the newest matching row. Recommend immutable content-addressed artifacts plus separately mutable pointers, distinct commit and alias lookup, and lookup responses carrying resolved revision, capture identity and digest. Preserve run snapshots, which already prevent within-source drift during retries. Snapshot digests check local consistency; they do not authenticate the producer. [D09–D12]
+For retried tests, only the final passing attempt contributes scenarios. Skipped tests and tests marked as expected failures contribute none. Parallel workers within one capture run can share an output directory, but independently launched capture commands need separate directories to avoid overwriting each other's catalogs if the file system continues to be used as intermediate storage. [D03–D04]
+
+**Keep capture and submission separate, and record which code produced each capture.** Separate commands allow provider tests to generate a catalog without the catalog service running. If an upload fails, the author can retry it without rerunning the tests. [D04, D11]
+
+Currently, submission reads the existing `catalog.json` and includes the current Git commit and branch. For example, a catalog captured at commit A could be submitted after switching to commit B and be labeled as coming from B. A failed capture at B also leaves the older catalog available for submission. The script does not check whether the file came from the current checkout or whether the captured code included uncommitted changes. [D04, D11]
+
+One suggested enhancement is to save a metadata file alongside the catalog when capture runs. It should record:
+
+- The provider's Git revision and whether it has uncommitted changes.
+- Which tests were selected.
+- The test runner and configuration used.
+- A digest identifying the captured catalog's contents.
+
+Submission should use this capture metadata to identify the recorded code and verify that the catalog still matches its digest. CI should check the metadata against agreed publication rules before uploading. Captures made with uncommitted changes may be useful for local exploration; whether they can also serve as release evidence remains an organizational policy decision.
+
+**Give each published catalog an identity that always refers to the same contents.** Currently, submitting a catalog again for the same system and commit overwrites the previous catalog. Two test runs selecting that commit can therefore receive different data. Selecting a full Git hash does not make the catalog immutable. [D09–D10]
+
+Latest and alias lookup also depend on submission order. In addition, the API checks a selector against both aliases and commit hashes. If it matches an alias on one entry and a commit hash on another, the most recently submitted match wins. [D10]
+
+The recommended enhancements would be:
+
+- Store each catalog under a digest computed from its contents, and never overwrite that stored catalog. Changed contents produce a new digest and a separate catalog.
+- Keep aliases such as `main` as separate references that can be updated to point to a different catalog.
+- Provide separate lookup operations for commits and aliases so their names cannot be confused.
+- Return the recorded provider revision, the capture run that produced the catalog, and its digest with lookup results. This lets consumers record exactly what they tested.
+
+Keep the existing snapshots for each consumer test run. Workers and retries already reuse the same loaded catalog for a source, even if the service changes during the run. Digest verification checks that a snapshot still matches its saved digest; it does not prove who produced or published the catalog. [D12]
 
 **Retain strict replay as an explicit isolated-test profile.** The reusable library defaults to fallback, allowing gradual composition with existing mocks and live calls. Petstore tests opt into strict routing. Strictness applies only to configured origins and protected path roots, so missing routing declarations can leave network traffic unguarded. Page routing, service-worker blocking and handler order are part of the integration boundary. A strict replay test proves request selection within that boundary, not universal provider independence for arbitrary application architectures. [D13, D18, D23]
 

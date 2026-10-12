@@ -255,10 +255,16 @@ fields left out of a loose object schema impose no requirement. Additional paylo
 fields are accepted. For an error scenario, a consumer can require the response
 status without constraining an error body it does not use.
 
-These are runtime checks. Schemas must be synchronous, and consumers should avoid
-coercion, defaults, or transformations that hide incompatible data. A missing
-scenario or invalid field fails its individual test with the provider, scenario
-ID, catalog source, digest, and failing field path.
+These tests validate the recorded data when they run. The prototype requires
+schemas to complete validation without asynchronous checks. Consumers should
+check values as recorded: converting a string ID to a number or supplying a
+default for a missing field could hide an incompatibility.
+
+If a required scenario is missing or a recorded value fails validation, the
+corresponding contract test fails. The error message identifies the provider,
+scenario ID, catalog source, and catalog digest (a fingerprint of the tested
+contents). For an invalid value, it also identifies the failing field, such as
+`response.body.id`.
 
 The existing consumer runs with `npm run test:contract` from the repository root.
 The [consumer setup guide](consumer_contract_testing.md) covers configuration,

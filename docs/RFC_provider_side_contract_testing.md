@@ -114,15 +114,10 @@ export default mergeConfig(
 
 The runner writes the current-run catalog only after the tests and required teardown pass. Unmarked setup requests are excluded, and markers are inert in ordinary test runs. Publication to the distribution service is a separate action. [D01–D05, D11, D20]
 
-With workspace dependencies built, the existing repository workflow is:
+With workspace dependencies built, run the existing marked provider suite from the repository root:
 
 ```sh
-# From the repository root, run the existing marked provider suite.
 npm run scenarios:capture --workspace=@response-capture/petstore-api
-# Start the local catalog service in another terminal.
-npm run dev --workspace=catalog-api
-# Once the service is ready, submit the captured catalog explicitly.
-npm run scenarios:submit --workspace=@response-capture/petstore-api
 ```
 
 ### Compact recorded scenario
@@ -154,6 +149,65 @@ This is a shortened illustration of `pet.create.success`, not the exact walkthro
 ```
 
 The wire schema validates JSON values and exchange structure. It does not validate `Pet`, `PetInput`, business rules, or consumer expectations. Optional TypeScript body declarations are trusted application assertions about data, with no corresponding runtime validator. [D06–D08]
+
+### Publishing and discovering scenarios through the catalog system
+
+The catalog system connects provider capture to consumer selection. Providers publish catalogs under a system identity; consumers locate a catalog for that system and select scenario IDs within it. This gives multiple consumers a shared source of recorded scenarios. Storage and delivery are separate from capture and replay, so the general pattern could use an artifact repository or another distribution mechanism. The prototype implements this role with a catalog API and a scenario browser. [D09, D19, D23]
+
+**Publication and storage.** The provider's submission script reads the local catalog and sends it to `PUT /catalog-submissions`. The submission envelope identifies the provider system and a commit, with an optional alias such as a branch name. For the recorded scenario above, its structure is:
+
+```ts
+// Submission shape: capturedScenario is the recorded exchange shown above.
+const submission = {
+  systemName: 'petstore-api',
+  commitHash: '<full-commit-hash>',
+  alias: 'main',
+  catalog: {
+    catalogVersion: 1,
+    scenarios: [capturedScenario],
+  },
+};
+```
+
+The actual script submits every scenario in the captured file and resolves Git metadata at submission time. That commit label therefore identifies the submitting checkout; it does not establish which code produced the recording. To publish through the local service, start the catalog API before running the submission command:
+
+```sh
+# From the repository root, start the local service in another terminal.
+npm run dev --workspace=catalog-api
+# Once it is ready, publish the provider's captured catalog.
+npm run scenarios:submit --workspace=@response-capture/petstore-api
+```
+
+The API persists submissions in SQLite under `(systemName, commitHash)`. A successful submission returns `204`. Submitting the same pair again replaces the entire catalog, refreshes its submission timestamp and replaces its alias; omitting the alias clears it. It does not merge individual scenarios. The API validates the submission envelope but accepts arbitrary catalog objects. Scenario validation occurs in the recorder, the provider submission script and the consumer/browser loaders. [D07, D09–D11]
+
+**Lookup and selection.** The API exposes these operations:
+
+| Operation                             | Purpose and returned data                                                                                                   |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `PUT /catalog-submissions`            | Store or replace a catalog submission                                                                                       |
+| `GET /catalog-submissions`            | Inspect stored submissions, including their metadata and catalog payloads                                                   |
+| `GET /catalog-inventory`              | Discover systems and catalog versions, with commit labels, optional aliases and submission dates; excludes catalog payloads |
+| `GET /catalogs/:systemName`           | Retrieve the most recently submitted catalog for a system                                                                   |
+| `GET /catalogs/:systemName/:selector` | Retrieve the newest catalog matching an alias or commit label                                                               |
+
+For example, these read-only requests inspect inventory, retrieve the latest Petstore catalog, and select one by the `main` alias if that alias has been submitted:
+
+```sh
+curl http://localhost:3001/catalog-inventory
+curl http://localhost:3001/catalogs/petstore-api
+curl http://localhost:3001/catalogs/petstore-api/main
+```
+
+The two catalog lookup routes return the catalog object itself, or `404` when no match exists. Latest means latest submission, not newest Git revision. Selector matching is exact and case-sensitive; path segments must be URL-encoded. If an alias matches another entry's commit label, the newest matching submission wins. Because entries can be replaced, selecting a commit does not make the payload immutable. Lookup also omits resolved-commit metadata, so a consumer snapshot records the requested selector and payload digest rather than inferring the revision behind an alias. [D10–D12]
+
+**Discovery for test authors.** The catalog UI reads inventory, lets authors choose a system and Latest or a recorded commit, and displays the selected catalog's scenarios. Authors can search and filter by metadata and inspect IDs, methods, paths, matching hints, response statuses and JSON bodies before choosing references for a consumer test. With the catalog API running, start it locally with:
+
+```sh
+npm run dev --workspace=catalog-ui
+# Open http://localhost:4201/.
+```
+
+Browsing does not execute provider requests or establish that independently recorded scenarios form a coherent journey. The catalog system distributes and exposes the data; the consumer owns scenario selection and journey assertions. Capture can run without this system, while publication and a consumer's first lookup require its API. Once loaded, the consumer's run-scoped snapshot supplies that source to its workers and retries. Shared-service access control, retention and availability requirements remain decisions for broader use. [D09, D12, D16, D19, D22]
 
 ### Consuming scenarios on the consumer side
 
@@ -231,6 +285,7 @@ test('create a pet and show its saved details', async ({ page, replay }) => {
     create: petScenarios.create,
     detail: petScenarios.detail,
   });
+  
   const input = create.request.body;
   const saved = create.response.body;
 
@@ -245,10 +300,12 @@ test('create a pet and show its saved details', async ({ page, replay }) => {
   await expect(page).toHaveURL(`/pets/${saved.id}`);
   await expect(page.getByRole('status')).toHaveText('Pet saved.');
   await expect(page.getByRole('heading', { name: saved.name, exact: true })).toBeVisible();
+
   expect(create.calls()[0]?.body).toMatchObject({
     name: input.name,
     photoUrls: input.photoUrls,
   });
+
   create.assertUsed();
   detail.assertUsed();
 });

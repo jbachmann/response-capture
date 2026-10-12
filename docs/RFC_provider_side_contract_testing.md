@@ -92,7 +92,11 @@ it('creates a pet with defaults', async () => {
 });
 ```
 
-The marker selects the exchange for capture; it does not replace the server or the assertions. The optional matching hint constrains later replay and must match the captured request. Enable capture through a dedicated runner configuration that retains the provider's existing E2E configuration:
+The marker selects the exchange for capture; it does not replace the server or the assertions. The optional matching hint constrains later replay and must match the captured request.
+
+The ID `pet.create.success` belongs to an existing provider test. When adapting this snippet to capture another exchange, assign a new stable ID. IDs must be unique across a capture run; duplicate IDs prevent catalog publication.
+
+Enable capture through a dedicated runner configuration that retains the provider's existing E2E configuration:
 
 ```ts
 // vitest.config.capture.ts
@@ -108,7 +112,9 @@ export default mergeConfig(
 );
 ```
 
-The runner writes the current-run catalog only after the tests and required teardown pass. Unmarked setup requests are excluded, and markers are inert in ordinary test runs. Publication to the distribution service is a separate action. With workspace dependencies built, the existing repository workflow is:
+The runner writes the current-run catalog only after the tests and required teardown pass. Unmarked setup requests are excluded, and markers are inert in ordinary test runs. Publication to the distribution service is a separate action. [D01–D05, D11, D20]
+
+With workspace dependencies built, the existing repository workflow is:
 
 ```sh
 # From the repository root, run the existing marked provider suite.
@@ -118,8 +124,6 @@ npm run dev --workspace=catalog-api
 # Once the service is ready, submit the captured catalog explicitly.
 npm run scenarios:submit --workspace=@response-capture/petstore-api
 ```
-
-These are excerpts of the existing workflow, not additional tests to add alongside its scenario IDs; IDs must be unique within a capture run. The fixture, provider assertions, capture configuration and submission script are referenced in appendix decisions D01–D05, D11 and D20.
 
 ### Compact recorded scenario
 

@@ -9,7 +9,9 @@
     "test": "ng test --watch=false",
     "test:e2e": "tsc -p tsconfig.e2e.json && playwright test",
     "test:e2e:harness": "tsc -p tsconfig.e2e.json && playwright test --project=harness",
-    "dev": "ng serve"
+    "dev": "ng serve",
+    "test:contract": "tsc -p contract/tsconfig.json && vitest run --config contract/vitest.config.ts",
+    "test:contract:unit": "tsc -p contract/tsconfig.json && vitest run --config contract/vitest.unit.config.ts"
   },
   "private": true,
   "dependencies": {
@@ -30,6 +32,7 @@
     "@angular/compiler-cli": "^21.2.0",
     "@playwright/test": "1.56.1",
     "@response-capture/scenario-client": "*",
+    "@response-capture/scenario-contract": "*",
     "@tailwindcss/postcss": "^4.1.12",
     "@types/node": "24.10.1",
     "axe-core": "^4.14.0",
@@ -38,6 +41,7 @@
     "prettier": "^3.8.1",
     "tailwindcss": "^4.1.12",
     "typescript": "~5.9.2",
-    "vitest": "^4.0.8"
+    "vitest": "^4.0.8",
+    "zod": "4.3.6"
   }
 }

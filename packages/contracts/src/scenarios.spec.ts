@@ -107,6 +107,23 @@ describe('scenario schema', () => {
 });
 
 describe('catalog identity', () => {
+  it('accepts query values including empty strings without changing wire version', () => {
+    const scenario = {
+      ...sample(),
+      request: { ...sample().request, query: { tags: ['cute cat', '', 'a+b'] } },
+    };
+    expect(() =>
+      validateCatalog({ catalogVersion: 1, scenarios: [scenario] }, 'query.json'),
+    ).not.toThrow();
+  });
+  it.each([null, [], 'tags=x', { tags: [] }, { tags: 'x' }, { tags: [1] }, { tags: [null] }])(
+    'rejects malformed query %j',
+    (query) => {
+      expect(() =>
+        validateScenario({ ...sample(), request: { ...sample().request, query } }, 'query.json'),
+      ).toThrow(/query.json.*pet.create.*request.query/);
+    },
+  );
   it('rejects duplicate IDs within a catalog', () => {
     expect(() =>
       validateCatalog({ catalogVersion: 1, scenarios: [sample(), sample()] }, 'duplicates.json'),

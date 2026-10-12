@@ -256,6 +256,35 @@ describe('pet behavior (e2e)', () => {
     await api().get('/store/inventory').expect(200).expect({ available: 1, pending: 1, sold: 1 });
   });
 
+  it('captures the single-value filters and complete replacement sent by the UI', async () => {
+    const input = {
+      ...pet,
+      status: 'available',
+      category: { id: 4, name: 'Cats' },
+      tags: [{ id: 3, name: 'cute cat' }],
+    };
+    const saved = (await api().post('/pet').send(input).expect(201)).body;
+    await api()
+      .get('/pet/findByStatus')
+      .query({ status: 'available' })
+      .use(capture('pet.filter.by-status.success'))
+      .expect(200)
+      .expect([saved]);
+    await api()
+      .get('/pet/findByTags')
+      .query({ tags: 'cute cat' })
+      .use(capture('pet.filter.by-tags.success'))
+      .expect(200)
+      .expect([saved]);
+    const replacement = { ...input, id: saved.id, name: 'Updated cat', status: 'pending' };
+    await api()
+      .put('/pet')
+      .send(replacement)
+      .use(capture('pet.replace.complete'))
+      .expect(200)
+      .expect(replacement);
+  });
+
   it.each([
     { label: 'missing required fields', body: {} },
     { label: 'missing name', body: { photoUrls: [] } },

@@ -3,6 +3,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/configure-app.js';
+import { parseCatalog } from '@response-capture/contracts/scenarios';
 
 describe('catalog API', () => {
   let app: NestExpressApplication;
@@ -22,6 +23,40 @@ describe('catalog API', () => {
 
   it('has no root greeting route', async () => {
     await request(app.getHttpServer()).get('/').expect(404);
+  });
+
+  it('round trips version 1 catalogs with decoded query values through storage and shared readers', async () => {
+    const catalog = parseCatalog({
+      catalogVersion: 1,
+      scenarios: [
+        {
+          schemaVersion: 1,
+          id: 'filter.example',
+          request: {
+            method: 'GET',
+            path: '/pet/findByTags',
+            body: null,
+            query: { tags: ['cute cat', 'a+b', ''] },
+          },
+          response: { status: 200, body: [] },
+        },
+      ],
+    });
+    await request(app.getHttpServer())
+      .put('/catalog-submissions')
+      .send({
+        systemName: 'petstore-api',
+        commitHash: 'query-commit',
+        alias: 'query-alias',
+        catalog,
+      })
+      .expect(204);
+    for (const suffix of ['', '/query-commit', '/query-alias']) {
+      const response = await request(app.getHttpServer())
+        .get(`/catalogs/petstore-api${suffix}`)
+        .expect(200);
+      expect(parseCatalog(response.body)).toEqual(catalog);
+    }
   });
 
   it('returns inventory grouped by system with ISO dates and no catalog payloads', async () => {

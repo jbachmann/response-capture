@@ -71,6 +71,11 @@
       "cache": false,
       "passThroughEnv": ["CATALOG_API_URL", "CATALOG_ALIAS"],
       "dependsOn": ["^build"]
+    },
+    "test:contract": {
+      "cache": false,
+      "dependsOn": ["^build"],
+      "passThroughEnv": ["CATALOG_API_URL", "CATALOG_SELECTOR", "CONTRACT_CATALOG_PATH"]
     }
   },
   "globalPassThroughEnv": ["NG_BUILD_MAX_WORKERS"],

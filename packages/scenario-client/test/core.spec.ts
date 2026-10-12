@@ -35,6 +35,14 @@ afterEach(async () => {
 });
 
 const baseURL = 'http://localhost:4202';
+test('shared catalog readers preserve additive query recordings and repeated-value order', () => {
+  const scenario = example('filter');
+  scenario.request.query = { status: ['pending', 'available', ''] };
+  const catalog = new ScenarioCatalog({ catalogVersion: 1, scenarios: [scenario] }, 'petstore-api');
+  expect(catalog.get('filter').request.query).toEqual({ status: ['pending', 'available', ''] });
+  catalog.get('filter').request.query!.status.reverse();
+  expect(catalog.get('filter').request.query?.status).toEqual(['pending', 'available', '']);
+});
 const selectedSource = (selector: string | undefined = 'main') => ({
   systemName: 'petstore-api',
   selection: catalogSelectionFromEnv(selector),

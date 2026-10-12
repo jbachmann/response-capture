@@ -4,6 +4,7 @@ export type Method = (typeof methods)[number];
 export interface RequestExample {
   method: Method;
   path: string;
+  query?: Record<string, string[]>;
   body: Json;
   match?: { bodyContains: { [key: string]: Json } };
 }
@@ -102,7 +103,7 @@ export function isJsonContentType(value: string): boolean {
 
 export function validateRequest(value: unknown, context: string): asserts value is RequestExample {
   const request = object(value, context, 'request');
-  keys(request, ['method', 'path', 'body', 'match'], context, 'request');
+  keys(request, ['method', 'path', 'query', 'body', 'match'], context, 'request');
   if (!methods.includes(request.method as Method)) {
     fail(context, 'request.method', `must be one of ${methods.join(', ')}`);
   }
@@ -118,6 +119,19 @@ export function validateRequest(value: unknown, context: string): asserts value 
     );
   }
   validateJson(request.body, context, 'request.body');
+  if (request.query !== undefined) {
+    const query = object(request.query, context, 'request.query');
+    validateJson(query, context, 'request.query');
+    for (const [key, values] of Object.entries(query)) {
+      if (
+        !Array.isArray(values) ||
+        !values.length ||
+        values.some((value) => typeof value !== 'string')
+      ) {
+        fail(context, `request.query.${key}`, 'must be a nonempty array of strings');
+      }
+    }
+  }
   if (request.match !== undefined) {
     const match = object(request.match, context, 'request.match');
     keys(match, ['bodyContains'], context, 'request.match');

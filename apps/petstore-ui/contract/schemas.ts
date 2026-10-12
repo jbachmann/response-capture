@@ -66,3 +66,17 @@ export const shippingOrder = order.extend({ shipDate: shippingTimestamp });
 export const seedResult = z.looseObject({ pets: count, orders: count, inventory });
 export const statusQuery = z.strictObject({ status: z.array(petStatus).length(1) });
 export const tagQuery = z.strictObject({ tags: z.array(z.string().min(1)).length(1) });
+
+// Consumer route contracts validate shape and safe IDs without fixing recorded values.
+export const petPath = z
+  .string()
+  .regex(/^\/pet\/\d+$/)
+  .refine((path) => positiveInteger.safeParse(Number(path.split('/').at(-1))).success, {
+    message: 'Expected /pet/{id} with a positive safe integer ID',
+  });
+export const orderPath = z
+  .string()
+  .regex(/^\/store\/order\/\d+$/)
+  .refine((path) => positiveInteger.safeParse(Number(path.split('/').at(-1))).success, {
+    message: 'Expected /store/order/{id} with a positive safe integer ID',
+  });

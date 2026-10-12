@@ -1,6 +1,4 @@
 import type { Catalog, Json, Method, Scenario } from '@response-capture/contracts/scenarios';
-import type { CatalogSnapshot } from '@response-capture/scenario-client';
-import { catalogDigest } from '@response-capture/scenario-client/node';
 
 // Supplied offline examples; these do not read provider types, DTOs or catalogs.
 export const basicPet = { id: 7, name: 'Example', photoUrls: [], tags: [], status: 'available' };
@@ -95,16 +93,5 @@ export function fixtureCatalog(): Catalog {
         response: { status, body: response },
       }),
     ),
-  };
-}
-export function fixtureSnapshot(catalog = fixtureCatalog()): CatalogSnapshot {
-  return {
-    catalog,
-    source: {
-      systemName: 'petstore-api',
-      selector: null,
-      url: 'file:///offline/catalog.json',
-      sha256: catalogDigest(catalog),
-    },
   };
 }

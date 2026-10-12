@@ -32,15 +32,40 @@ the general pattern does not depend on that particular stack.
 ## 2. How it works
 
 ```mermaid
-flowchart LR
-  P[Provider E2E tests] --> C[Capture selected exchanges]
-  C --> L[Local catalog after a passing run]
-  L --> S[Submit to a central catalog location]
-  S --> V[Consumer selects a catalog and scenario IDs]
-  E[Consumer-owned expectations] --> T[Validate recorded requests and responses]
-  V --> T
-  T --> R[Pass or field-level failures]
+flowchart TB
+  subgraph Provider["Provider team"]
+    P["Run E2E tests against the real provider"]
+    C["Capture selected request/response exchanges"]
+    G{"Tests and required teardown pass?"}
+    L["Write local scenario catalog"]
+
+    P --> C --> G
+    G -->|Yes| L
+    G -->|No| X["No new catalog"]
+  end
+
+  subgraph Distribution["Shared catalog location"]
+    S["Published provider catalogs"]
+  end
+
+  subgraph Consumer["Consumer team — repeated for each consumer"]
+    V["Select catalog and scenario IDs"]
+    N["Load catalog snapshot for this run"]
+    E["Author consumer expectations"]
+    T["Validate recorded requests and responses"]
+    R["Pass or diagnostic failures"]
+
+    V --> N --> T
+    E --> T
+    T --> R
+  end
+
+  L -->|Separate publication step| S
+  S -->|Retrieve selected catalog| N
 ```
+
+Providers publish examples of tested behavior. Each consumer independently checks
+those examples against its own requirements.
 
 ### Capture: the provider records tested examples
 
@@ -309,3 +334,66 @@ For authoring details, see the [consumer setup guide](consumer_contract_testing.
 and [contract package guide](../packages/scenario-contract/README.md). The examples
 in this RFC are shortened to illustrate the pattern; the linked code contains the
 complete prototype setup and checks.
+
+### Execution sequence
+
+This view shows the real provider interaction, the passing-run gate, and the later
+consumer verification against recorded scenarios. Publication is a separate step
+using a successfully written local catalog.
+
+```mermaid
+sequenceDiagram
+  participant Tests as Provider E2E tests
+  participant API as Provider application
+  participant Recorder as Scenario recorder
+  participant Publisher as Provider publication
+  participant Store as Catalog location
+  participant Consumer as Consumer contract tests
+
+  Tests->>API: Send a marked request
+  API-->>Tests: Return a real response
+  Tests->>Recorder: Capture the selected exchange
+  Note over Tests,Recorder: Repeat for selected scenarios - normal assertions still run
+
+  alt Capture run, assertions, and required teardown pass
+    Recorder->>Recorder: Write local catalog
+  else Run fails
+    Note over Recorder: No new catalog is written
+  end
+
+  opt Publish a successfully written local catalog
+    Publisher->>Store: Submit local catalog with provider and selection metadata
+  end
+
+  Consumer->>Store: Request selected provider catalog
+  Store-->>Consumer: Return recorded scenarios
+  Consumer->>Consumer: Snapshot catalog contents for the run
+  Consumer->>Consumer: Validate selected scenarios against consumer-owned expectations
+  Note over Consumer: Pass or failures identifying missing scenarios and invalid fields
+```
+
+### One catalog, multiple consumers
+
+A provider catalog can serve consumers with different scenario selections and
+expectations. The same catalog change can pass one consumer's checks and fail
+another's.
+
+```mermaid
+flowchart LR
+  P["Passing provider E2E capture run"]
+  C["Published scenario catalog"]
+
+  P --> C
+
+  C --> A["Consumer A validation"]
+  EA["A's selected scenarios and expectations"] --> A
+  A --> RA["A's result"]
+
+  C --> B["Consumer B validation"]
+  EB["B's selected scenarios and expectations"] --> B
+  B --> RB["B's result"]
+
+  C --> D["Consumer C validation"]
+  ED["C's selected scenarios and expectations"] --> D
+  D --> RD["C's result"]
+```

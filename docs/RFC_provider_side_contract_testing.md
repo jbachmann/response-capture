@@ -84,7 +84,16 @@ it('creates a pet with defaults', async () => {
   await api()
     .post('/pet')
     .send(pet)
-    .use(capture('pet.create.success'))
+    .use(
+      capture('pet.create.success', {
+        title: 'Create a pet with defaults',
+        category: 'Pets',
+        group: 'Create a pet',
+        description: 'Creates Milo with no category or tags and the default available status.',
+        tags: ['defaults'],
+        requestMatch: { bodyContains: { name: 'Milo' } },
+      }),
+    )
     .expect(201)
     .expect({ ...pet, id: 1, tags: [], status: 'available' });
 });
@@ -94,6 +103,18 @@ The marker records the exchange; the provider test still checks real behavior.
 Only selected requests are captured, so setup traffic stays out of the catalog.
 Expected error responses can also be useful examples: a test that successfully
 checks a `404` can contribute that scenario.
+
+`capture(id, metadata?)` requires only the scenario ID. The recorder automatically
+captures the request method, path, query parameters, and JSON body, plus the
+response status and JSON body. The optional `title`, `category`, `group`, `tags`,
+and `description` help consumers discover scenarios and understand their fixture
+conditions; including them makes a shared catalog easier to use.
+
+The optional `requestMatch` becomes `request.match` in the catalog. Its
+`bodyContains` hint describes a distinguishing subset of the request body and must
+match the observed request. It does not change the request or define the consumer's
+contract. The [recorder usage guide](../packages/scenario-recorder/docs/usage.md)
+describes metadata and matching hints in more detail.
 
 A dedicated capture configuration writes the catalog only after the selected
 capture run, its assertions, and required teardown pass. Receiving a response is
@@ -109,10 +130,16 @@ A catalog contains records like this shortened `pet.create.success` example:
     {
       "schemaVersion": 1,
       "id": "pet.create.success",
+      "title": "Create a pet with defaults",
+      "category": "Pets",
+      "group": "Create a pet",
+      "description": "Creates Milo with no category or tags and the default available status.",
+      "tags": ["defaults"],
       "request": {
         "method": "POST",
         "path": "/pet",
-        "body": { "name": "Milo", "photoUrls": ["https://example.com/milo.jpg"] }
+        "body": { "name": "Milo", "photoUrls": ["https://example.com/milo.jpg"] },
+        "match": { "bodyContains": { "name": "Milo" } }
       },
       "response": {
         "status": 201,

@@ -4,17 +4,19 @@ Status: research complete; decision pending. Researched October 12, 2026.
 
 ## 1. Problem and decision requested
 
-**Recommendation: continue with specified changes, through a bounded experiment.** The prototype demonstrates useful UI independence: a passing provider suite produced 55 examples, and seven browser tests exercised the Angular application using those examples without a persistent Petstore provider. It establishes weaker compatibility confidence: replay can accept requests that the provider would reject. These two criteria deserve equal weight; successful UI isolation alone does not justify adopting this as a compatibility gate. See execution evidence E1–E4 and decisions D01–D23 in the appendix.
+Consumer teams need realistic API examples to test their applications independently. Keeping those examples aligned with provider behavior creates ongoing maintenance work, while running tests against a live provider requires service availability and controlled state. The problem is how to make provider behavior reusable as test data and establish what confidence that reuse gives consumers.
 
-The problem is how to keep UI examples grounded in provider behavior while allowing consumer tests to run separately. Handwritten fixtures need maintenance; tests against a live provider need a running service and controlled state. This approach captures deliberately selected interactions from provider tests, distributes them as data, and lets consumer authors choose the examples relevant to a UI journey.
+This RFC evaluates three connected patterns: capturing selected exchanges from passing provider tests, publishing those exchanges as discoverable artifacts, and letting consumers select and replay them in their own tests. Together, these patterns could allow provider tests to supply examples that multiple consumers and testing tools can reuse.
 
-The decision requested is whether to fund another experiment that preserves this useful fixture workflow while testing stronger request validation, reliable artifact identity, and consumer coverage. This RFC does not approve adoption, introduce a deployment gate, or implement changes. If the main requirement is verified compatibility between independently released versions, compare the experiment directly with consumer-driven contracts before extending the custom tooling.
+Their potential value to the API testing ecosystem is a common way to produce, discover, and consume examples grounded in tested provider behavior. A portable format and clear integration boundaries could support different frameworks and reduce duplicated fixture authoring. That value must be evaluated against two equally important criteria: whether consumers can run repeatable UI tests without the provider, and how much confidence those tests provide in provider/consumer compatibility. The RFC examines where these patterns add value alongside conventional mocks, schema-based testing, consumer-driven contracts, and live-provider tests.
+
+**The decision requested is whether these patterns merit further development as reusable tooling for the ecosystem, and what role that tooling should serve.** The recommendation is to continue evaluating their value for independent UI testing and determine which additional verification is needed to support compatibility claims. The review should establish the intended guarantees and how the patterns fit with existing approaches.
 
 ## 2. Proposed approach
 
 ### General pattern
 
-An **example** is one concrete request and response observed during a passing provider test. A **catalog** collects examples under stable scenario IDs. A **replay phase** is the set of examples currently available to a consumer test. None of these is a provider state machine or a description of every legal API input.
+An **example** is one concrete request and response observed during a passing provider test. A **catalog** collects examples under stable scenario IDs. A **replay phase** is the set of examples currently available to a consumer test.
 
 ```mermaid
 flowchart LR

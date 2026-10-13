@@ -207,11 +207,41 @@ export default contractGlobalSetup({
 });
 ```
 
-`pets` is a local alias; `petstore-api` identifies the published provider. The
-consumer can instead select a particular alias or commit, or read a raw catalog
-file. Each distinct source loads once per run, and workers receive the same
-catalog contents. Saved snapshots and their digests identify the payload used by
-that run. Loading errors fail the run without fallback.
+`pets` is a local alias used by the consumer's tests; `petstore-api` identifies the
+published provider. Replace `selection` to choose which published behavior to
+verify:
+
+| Selection                                                  | Behavior checked                                                      | Example use                                |
+| ---------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------ |
+| `{ latest: true }`                                         | Most recently submitted catalog for the provider, across all aliases. | Check the newest published behavior.       |
+| `{ selector: 'main' }`                                     | Most recently submitted catalog matching the published `main` alias.  | Check the provider's main branch.          |
+| `{ selector: 'feature/new-pet-status' }`                   | Most recently submitted catalog matching that published alias.        | Check a provider change before merging it. |
+| `{ selector: '9f2c4a1b6d8e0f3a5c7b9d1e2f4a6c8b0d3e5f7a' }` | Catalog stored under that provider commit hash.                       | Check a specific provider revision.        |
+
+An alias must have been supplied at publication; a branch name is not discovered
+automatically. Alias and commit selections use the same `selector` field, and
+`latest` and `selector` are mutually exclusive. Consumer setup can supply the
+selector from CI configuration to check the intended provider revision. Commit
+selection is still subject to the publication and provenance limits in section 3.
+
+For a local capture or a downloaded artifact, replace the entire `pets` source
+with a file source:
+
+```ts
+pets: {
+  systemName: 'petstore-api',
+  file: '../petstore-api/artifacts/api-scenarios/catalog.json',
+},
+```
+
+File paths resolve from `rootDirectory`; a file source replaces the API URL and
+selection. The `catalogs` map can also declare multiple local aliases with
+different sources or selections, so one run can check several providers or
+catalog versions.
+
+Each distinct source loads once per run, and workers receive the same catalog
+contents. Saved snapshots and their digests identify the payload used by that
+run. Loading errors fail the run without fallback.
 
 The consumer then declares what it needs from `pet.create.success`. These schemas
 are authored independently of provider DTOs and shared application types:
